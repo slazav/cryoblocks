@@ -1,0 +1,13 @@
+#!./cryoblocks
+
+block a 1K   type=bath  # the first block
+block b 0.1K type=simple C=1mJ/K
+link l1 a b  type=const Qdot=1mW
+
+print t B Q(l1) T(b)
+
+field 7T
+field_rate -0.1T/s
+
+run 1s 0.01s
+
