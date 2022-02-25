@@ -51,56 +51,7 @@ class Calculator {
       std::cout << "# replacing existing block\n";
 
     temps.emplace(name, temp);
-
-    // extract type parameter
-    auto type = get_key_val(b,e, "type");
-    if (type == "") throw Err() << "block type is not set";
-
-    // thermal bath, infinite heat capacity
-    if (type == "bath") {
-      auto opts = get_key_val_args(b,e, {"type="});
-      blocks.emplace(name, new BlockSimple(INFINITY));
-      return;
-    }
-
-    // simple block with a constant heat capacity
-    if (type == "simple") {
-      auto opts = get_key_val_args(b,e, {"type=", "C=1J/K"});
-      blocks.emplace(name, new BlockSimple(read_heat_cap(opts["C"])));
-      return;
-    }
-
-    // A block with paramagnetic heat capacity
-    if (type == "paramagnet") {
-      auto opts = get_key_val_args(b,e, {"type=", "Bint=", "gyro=", "spin=", "material=", "nmol="});
-
-      double Bint=0, gyro=0, spin=0, nmol=0;
-
-      if (opts["material"] == "copper"){
-        Bint = 0.36e-3;    // [T], dipolar feld in copper
-        gyro = 71.118e6;   // [rad/s/T] gyromagnetic ratio of copper
-        spin = 1.5;        // spin 3/2
-      }
-      if (opts["material"] == "he3"){
-        Bint = 720e-3;    // [T], dipolar feld in solid helium-3
-        gyro = 203.789e6; // [rad/s/T] gyromagnetic ratio, helium-3
-        spin = 0.5;       // spin 1/2, helium-3
-      }
-      if (opts["Bint"] != "") Bint = read_magn_field(opts["Bint"]);
-      if (opts["gyro"] != "") gyro = read_gyro(opts["gyro"]);
-      if (opts["spin"] != "") spin = read_dimensionless(opts["spin"]);
-      if (opts["nmol"] != "") nmol = read_dimensionless(opts["nmol"]);
-      if (Bint <= 0) throw Err() << "A positive value expected: Bint";
-      if (gyro <= 0) throw Err() << "A positive value expected: gyro";
-      if (spin <= 0) throw Err() << "A positive value expected: spin";
-      if (nmol <= 0) throw Err() << "A positive value expected: nmol";
-      blocks.emplace(name, new BlockParamagn(Bint, gyro, spin, nmol));
-      return;
-    }
-
-    throw Err() << "unknown block type: " << type;
-
-
+    blocks.emplace(name, create_block(b,e));
   }
 
   /***********************************/
@@ -113,18 +64,7 @@ class Calculator {
     if (links.count(name)>0)
       std::cout << "# replacing existing link\n";
 
-    // extract type
-    auto type = get_key_val(b,e, "type");
-    if (type == "")   throw Err() << "link type is not set";
-
-    if (type=="const"){
-      auto opts = get_key_val_args(b,e, {"type=", "Qdot=0W"});
-      auto Q = read_power(opts["Qdot"]);
-      links.emplace(name, new LinkConst(bl1, bl2, Q));
-      return;
-    }
-
-    throw Err() << "unknown link type: " << type;
+    links.emplace(name, create_link(b,e, bl1, bl2));
   }
 
   /***********************************/
@@ -191,7 +131,7 @@ class Calculator {
         bq[b2n] = ((bq.count(b2n) == 0)? 0.0 : bq[b2n]) + qdot;
       }
 
-      // find temperature change of each block affected by heat flows
+      // find temperature change of each block
       for (const auto & b : blocks){
         auto n = b.first;
         auto dQ = bq.count(n)? bq[n] * dt : 0;

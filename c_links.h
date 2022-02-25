@@ -1,6 +1,10 @@
 #ifndef C_LINKS_H
 #define C_LINKS_H
 
+#include <memory>
+
+#include "c_dim.h"
+
 /********************************************************************/
 // Base class for a thermal link
 class LinkBase {
@@ -30,6 +34,28 @@ class LinkConst: public LinkBase {
 
     double get_qdot(const double T1, const double T2) const override { return Q;}
 };
+
+/********************************************************************/
+/********************************************************************/
+
+// Create a link using vector<string> parameters:
+
+std::shared_ptr<LinkBase> create_link(
+  const std::vector<std::string>::const_iterator & b,
+  const std::vector<std::string>::const_iterator & e,
+  const std::string & bl1, const std::string & bl2){
+
+  // extract type
+  auto type = get_key_val(b,e, "type");
+  if (type == "")   throw Err() << "link type is not set";
+
+  if (type=="const"){
+    auto opts = get_key_val_args(b,e, {"type=", "Qdot=0W"});
+    auto Q = read_power(opts["Qdot"]);
+    return std::shared_ptr<LinkBase>(new LinkConst(bl1, bl2, Q));
+  }
+  throw Err() << "unknown link type: " << type;
+}
 
 
 #endif
