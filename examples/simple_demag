@@ -1,0 +1,12 @@
+#!./cryoblocks
+
+# Simple demag of a copper block
+
+block a 10mK   type=paramagnet material=copper nmol=1
+
+field 7T
+field_rate -0.1T/s
+
+print B T(a)
+run 70s 0.1s
+

@@ -40,13 +40,6 @@ class Calculator {
     return b->second;
   }
 
-  // get heat capacity of a block
-  double get_block_heat_cap(const std::string & name){
-    auto b = blocks.find(name);
-    if (b==blocks.end()) throw Err() << "Accessing non-existing block: " << name;
-    return b->second->get_heat_cap(get_block_temp(name), B);
-  }
-
   void set_magn_field(const double v) {B = v;}
   void set_magn_field_rate(const double v) {Bdot = v;}
 
@@ -65,16 +58,46 @@ class Calculator {
 
     // thermal bath, infinite heat capacity
     if (type == "bath") {
-      auto opts = get_key_val_args(b,e, {"type=", "print="});
+      auto opts = get_key_val_args(b,e, {"type="});
       blocks.emplace(name, new BlockSimple(INFINITY));
       return;
     }
 
+    // simple block with a constant heat capacity
     if (type == "simple") {
-      auto opts = get_key_val_args(b,e, {"type=", "print=", "C=1J/K"});
+      auto opts = get_key_val_args(b,e, {"type=", "C=1J/K"});
       blocks.emplace(name, new BlockSimple(read_heat_cap(opts["C"])));
       return;
     }
+
+    // A block with paramagnetic heat capacity
+    if (type == "paramagnet") {
+      auto opts = get_key_val_args(b,e, {"type=", "Bint=", "gyro=", "spin=", "material=", "nmol="});
+
+      double Bint=0, gyro=0, spin=0, nmol=0;
+
+      if (opts["material"] == "copper"){
+        Bint = 0.36e-3;    // [T], dipolar feld in copper
+        gyro = 71.118e6;   // [rad/s/T] gyromagnetic ratio of copper
+        spin = 1.5;        // spin 3/2
+      }
+      if (opts["material"] == "he3"){
+        Bint = 720e-3;    // [T], dipolar feld in solid helium-3
+        gyro = 203.789e6; // [rad/s/T] gyromagnetic ratio, helium-3
+        spin = 0.5;       // spin 1/2, helium-3
+      }
+      if (opts["Bint"] != "") Bint = read_magn_field(opts["Bint"]);
+      if (opts["gyro"] != "") gyro = read_gyro(opts["gyro"]);
+      if (opts["spin"] != "") spin = read_dimensionless(opts["spin"]);
+      if (opts["nmol"] != "") nmol = read_dimensionless(opts["nmol"]);
+      if (Bint <= 0) throw Err() << "A positive value expected: Bint";
+      if (gyro <= 0) throw Err() << "A positive value expected: gyro";
+      if (spin <= 0) throw Err() << "A positive value expected: spin";
+      if (nmol <= 0) throw Err() << "A positive value expected: nmol";
+      blocks.emplace(name, new BlockParamagn(Bint, gyro, spin, nmol));
+      return;
+    }
+
     throw Err() << "unknown block type: " << type;
 
 
@@ -169,9 +192,11 @@ class Calculator {
       }
 
       // find temperature change of each block affected by heat flows
-      for (const auto & b : bq){
-        auto C = get_block_heat_cap(b.first);
-        temps[b.first] += b.second * dt / C;
+      for (const auto & b : blocks){
+        auto n = b.first;
+        auto dQ = bq.count(n)? bq[n] * dt : 0;
+        auto T  = get_block_temp(n);
+        temps[n] += b.second->get_dt(dQ, T, B, Bdot*dt);
       }
       print_data();
 
@@ -202,19 +227,17 @@ try{
   if (!in_c.good()) throw Err() << "Can't open command file: " << argv[1];
 
   // find prefix (command file name without extension)
-  const char * pos1 = rindex(argv[1], '/');
-  const char * pos2 = rindex(argv[1], '.');
-  if (!pos1) pos1 = argv[1];
-  auto pref = pos2 && pos2>pos1+1 ? std::string(argv[1], pos2-argv[1]) : argv[1];
-
-  std::ofstream out_l((pref + ".run.log").c_str()); // log commands
+  //const char * pos1 = rindex(argv[1], '/');
+  //const char * pos2 = rindex(argv[1], '.');
+  //if (!pos1) pos1 = argv[1];
+  //auto pref = pos2 && pos2>pos1+1 ? std::string(argv[1], pos2-argv[1]) : argv[1];
 
   // Main cycle: read command file line by line
   while (1){
     // Read one line, detect EOF
     std::string line;
     if (!getline(in_c, line)){
-      std::cout << "End of command file, stop calculations\n";
+      std::cout << "# end of command file\n";
       break;
     }
 

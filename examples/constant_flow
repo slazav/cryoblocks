@@ -1,0 +1,11 @@
+#!./cryoblocks
+
+# a constant heat flow to a block
+
+block a 300K  type=bath  # heat bath at 300K
+block b 0.1K  type=simple C=1mJ/K
+link l1 a b   type=const Qdot=1mW
+
+print t T(b)
+
+run 1s 0.01s

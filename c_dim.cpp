@@ -2,6 +2,15 @@
 #include "c_err.h"
 
 double
+read_dimensionless(const std::string & str){
+  std::istringstream ss(str);
+  double v=0;
+  ss >> v;
+  if (!ss || !ss.eof()) throw Err() << "Dimensionless value expected: " << str;
+  return v;
+}
+
+double
 read_time(const std::string & str){
   std::istringstream ss(str);
   double v=0;
@@ -116,4 +125,15 @@ read_magn_field_rate(const std::string & str){
   if (u=="Oe/m")  return v*1e-4/60.0;
   if (u=="kOe/m") return v*1e-1/60.0;
   throw Err() << "Unknown magnetic field rate unit: " << str;
+}
+
+double
+read_gyro(const std::string & str){
+  std::istringstream ss(str);
+  double v=0;
+  std::string u;
+  ss >> v >> u;
+  if (u=="rad/s/T") return v;
+  if (u=="rad/s/G")  return v*1e4;
+  throw Err() << "Unknown unit for gyromagnetic ratio: " << str;
 }
