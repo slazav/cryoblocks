@@ -19,7 +19,9 @@
 class Calculator {
   std::map<std::string, std::shared_ptr<BlockBase> > blocks; // storage for blocks
   std::map<std::string, std::shared_ptr<LinkBase> >  links;  // links, block thermal connections
+
   std::map<std::string, double> temps; // block temperatures
+  std::map<std::string, std::pair<std::string, std::string> > conn; // connections link -> block1,block2
 
   typedef std::vector<std::string>::const_iterator arg_cit;
 
@@ -31,13 +33,23 @@ class Calculator {
   // current time [s]
   double t=0;
 
+
   public:
+  /***********************************/
 
   // get temperature of a block
   double get_block_temp(const std::string & name){
     auto b = temps.find(name);
-    if (b==temps.end()) throw Err() << "Accessing non-existing block: " << name;
+    if (b==temps.end()) throw Err() << "Unknown block: " << name;
     return b->second;
+  }
+
+  // get heat flow through a link
+  double get_link_flow(const std::string & name){
+    if (links.count(name)==0) throw Err() << "Unknown link: " << name;
+    auto T1 = get_block_temp(conn[name].first);
+    auto T2 = get_block_temp(conn[name].second);
+    return links[name]->get_qdot(T1,T2);
   }
 
   void set_magn_field(const double v) {B = v;}
@@ -64,7 +76,8 @@ class Calculator {
     if (links.count(name)>0)
       std::cout << "# replacing existing link\n";
 
-    links.emplace(name, create_link(b,e, bl1, bl2));
+    links.emplace(name, create_link(b,e));
+    conn.emplace(name, std::make_pair(bl1, bl2));
   }
 
   /***********************************/
@@ -82,6 +95,7 @@ class Calculator {
       // Temperature of a block: T(<name>)
       if (v.size()>3 && v[0]=='T' && v[1]=='(' && v[v.size()-1]==')'){
         auto n = v.substr(2,v.size()-3);
+        // extra check to have more understandable error message:
         if (blocks.count(n)==0) throw Err() << "Unknown block name for data output: " << n;
         std::cout << get_block_temp(n); 
         continue;
@@ -90,11 +104,9 @@ class Calculator {
       // Heat flow through a link: Q(<name>)
       if (v.size()>3 && v[0]=='Q' && v[1]=='(' && v[v.size()-1]==')'){
         auto n = v.substr(2,v.size()-3);
+        // extra check to have more understandable error message:
         if (links.count(n)==0) throw Err() << "Unknown link name for data output: " << n;
-        auto b1n = links[n]->get_block1();
-        auto b2n = links[n]->get_block2();
-        auto qdot = links[n]->get_qdot(get_block_temp(b1n), get_block_temp(b2n));
-        std::cout << qdot;
+        std::cout << get_link_flow(n);
         continue;
       }
 
@@ -124,9 +136,10 @@ class Calculator {
       // find heat flows to each block
       std::map<std::string, double> bq;
       for (const auto & l : links){
-        auto b1n = l.second->get_block1();
-        auto b2n = l.second->get_block2();
-        auto qdot = l.second->get_qdot(get_block_temp(b1n), get_block_temp(b2n));
+        auto n = l.first;
+        auto b1n = conn[n].first;
+        auto b2n = conn[n].second;
+        auto qdot = get_link_flow(n);
         bq[b1n] = ((bq.count(b1n) == 0)? 0.0 : bq[b1n]) - qdot;
         bq[b2n] = ((bq.count(b2n) == 0)? 0.0 : bq[b2n]) + qdot;
       }
