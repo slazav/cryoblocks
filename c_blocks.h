@@ -10,10 +10,15 @@
 /********************************************************************/
 // Base class for a thermal block.
 class BlockBase {
+  public:
+
   // Calculate temperature change.
-  // dQ = T dS = T(partial dS/dT) dT + T(partial dS/dB) dB = C dT + D dB
-  public: virtual double get_dt(
+  // dQ = T dS = T(partial dS/dT) dT + T(partial dS/dB) dB
+  virtual double get_dt(
     const double dQ, const double T, const double B, const double dB) const = 0;
+
+  // is the block has zero heat capacity?
+  virtual bool is_zero_c() const {return false;}
 };
 
 /********************************************************************/
@@ -21,11 +26,16 @@ class BlockBase {
 // a thermal bath (C=INFINITY)
 class BlockSimple: public BlockBase {
     double C;
+
   public:
+
     BlockSimple(const double C): C(C){}
     double get_dt(const double dQ, const double T, const double B, const double dB) const override {
        return dQ/C;
     }
+
+    // simple block can have zero heat capacity
+    bool is_zero_c() const {return C==0;}
 };
 
 
@@ -76,6 +86,12 @@ std::shared_ptr<BlockBase> create_block(
   if (type == "bath") {
     auto opts = get_key_val_args(b,e, {"type="});
     return std::shared_ptr<BlockBase>(new BlockSimple(INFINITY));
+  }
+
+  // a block with zero heat capacity
+  if (type == "zero-c") {
+    auto opts = get_key_val_args(b,e, {"type="});
+    return std::shared_ptr<BlockBase>(new BlockSimple(0));
   }
 
   // simple block with a constant heat capacity

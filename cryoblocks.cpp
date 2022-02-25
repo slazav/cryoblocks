@@ -15,6 +15,7 @@
 #include "c_links.h"
 #include "c_dim.h"
 
+#include <gsl/gsl_linalg.h>
 
 class Calculator {
   std::map<std::string, std::shared_ptr<BlockBase> > blocks; // storage for blocks
@@ -134,7 +135,14 @@ class Calculator {
     // time cycle
     te+=t;
     for (; t<=te; t+=dt){
-      // TODO: find and set temperatures of zero-C blocks
+
+      // find and set temperatures of zero-C blocks
+      double max = 1e-3;
+      for (int i=0; i<100; i++){
+        max = adjust_zero_c_temps(max);
+        if (max < 1e-6) break;
+        if (i==99) throw Err() << "Can't find temperatures of zero-C blocks";
+      }
 
       // find heat flows to each block
       std::map<std::string, double> bq;
@@ -147,19 +155,117 @@ class Calculator {
         bq[b2n] = ((bq.count(b2n) == 0)? 0.0 : bq[b2n]) + qdot;
       }
 
-      // find temperature change of each block
+      // find temperature change of each block (except zero-c)
       for (const auto & b : blocks){
+        if (b.second->is_zero_c()) continue;
         auto n = b.first;
         auto dQ = bq.count(n)? bq[n] * dt : 0;
         auto T  = get_block_temp(n);
         temps[n] += b.second->get_dt(dQ, T, B, Bdot*dt);
       }
+
+      // repeat calculation of zero-C blocks to have then in the equilibrium after the step
+      max = 1e-3;
+      for (int i=0; i<100; i++){
+        max = adjust_zero_c_temps(max);
+        if (max < 1e-6) break;
+        if (i==99) throw Err() << "Can't find temperatures of zero-C blocks";
+      }
+
       print_data();
 
       // change magnetic field
       B = B + Bdot*dt;
     }
   }
+
+  // Do one step of zero-C temperature calculation.
+  // Return maximum of relative temperature change dT/T.
+  // Parameter rstep is a relative temperature step (dT/T) for
+  // estimating derivatives.
+  double adjust_zero_c_temps(double rstep) {
+
+    // count zero-c blocks
+    std::map<std::string, size_t> num; // name -> number
+    size_t nzblocks = 0;
+    for (const auto & b : blocks)
+      if (b.second->is_zero_c()) num[b.first] = nzblocks++;
+
+    // Q - Heat flow to each zero-C block;
+    // dQdT - Derivative dQi/dTj for i,j in zero-c blocks.
+    gsl_matrix *dQdT = gsl_matrix_alloc(nzblocks, nzblocks);
+    gsl_vector *Q    = gsl_vector_alloc(nzblocks);
+    gsl_vector_set_all(Q, 0.0);
+    gsl_matrix_set_all(dQdT, 0.0);
+
+    // Find all links which connect zero-c blocks
+    // Fill Q and dQdT arrays
+    for (const auto & l : links){
+      auto n = l.first;
+      auto b1n = conn[n].first;
+      auto b2n = conn[n].second;
+      auto b1 = blocks[b1n];
+      auto b2 = blocks[b2n];
+      if (!b1->is_zero_c() && !b2->is_zero_c()) continue;
+
+      // temperatures of both blocks and flow between them:
+      auto T1 = temps[b1n];
+      auto T2 = temps[b2n];
+      auto qdot = l.second->get_qdot(T1,T2);
+
+      // If block1 is zero-c block, add to
+      // Q(block1), dQ(block1)/dT1, dQ(block2)/dT1
+      if (b1->is_zero_c()){
+        auto T1a = T1*(1+rstep);
+        auto qdota = l.second->get_qdot(T1a,T2);
+        auto dqdt1 = (qdota-qdot)/(T1a-T1);
+        auto i = num[b1n];
+        *gsl_vector_ptr(Q, i) -= -qdot;
+        *gsl_matrix_ptr(dQdT,i,i) -= dqdt1;
+        if (b2->is_zero_c()){
+          auto j = num[b2n];
+          *gsl_matrix_ptr(dQdT,j,i) += dqdt1;
+        }
+      }
+      // Same for block2
+      if (b2->is_zero_c()){
+        auto T2a = T2*(1+rstep);
+        auto qdota = l.second->get_qdot(T1,T2a);
+        auto dqdt2 = (qdota-qdot)/(T2a-T2);
+        auto i = num[b2n];
+        *gsl_vector_ptr(Q,i) += -qdot;
+        *gsl_matrix_ptr(dQdT,i,i) += dqdt2;
+        if (b1->is_zero_c()){
+          auto j = num[b1n];
+          *gsl_matrix_ptr(dQdT,j,i) -= dqdt2;
+        }
+      }
+    }
+
+    // Newton method: solve linear system  dQ_j/dTj * DTj = -Q_i
+
+    int s;
+    gsl_vector *DT = gsl_vector_alloc(nzblocks);
+    gsl_permutation *p = gsl_permutation_alloc (nzblocks);
+    gsl_linalg_LU_decomp (dQdT, p, &s);
+    gsl_linalg_LU_solve (dQdT, p, Q, DT);
+    gsl_permutation_free(p);
+    gsl_vector_free(Q);
+    gsl_matrix_free(dQdT);
+
+    // Adjust temperatures of zero-c blocks
+    double max = 0.0;
+    for (const auto & n : num){
+      auto v = gsl_vector_get(DT, n.second);
+      temps[n.first] += v;
+      double e = fabs(v/temps[n.first]);
+      if (max < e) max = e;
+    }
+    gsl_vector_free(DT);
+
+    return max;
+  }
+
 };
 
 /********************************************************************/

@@ -1,6 +1,6 @@
 TARGETS=cryoblocks
 
-LDLIBS= -lm
+LDLIBS= -lm -lgsl
 CPPFLAGS=-std=c++11
 CC=g++
 

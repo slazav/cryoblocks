@@ -1,0 +1,18 @@
+#!../cryoblocks
+
+# A few blocks with zero heat capacity
+
+block bath 300K  type=bath
+block b1 300K type=zero-c
+block b2 300K type=zero-c
+block b3 300K type=zero-c
+block b4 1K type=simple C=1mJ/K
+
+link l1 bath b1 type=metal_bar R=1mOhm
+link l2 b1 b2 type=metal_bar R=2mOhm
+link l3 b2 b3 type=metal_bar R=3mOhm
+link l4 b3 b4 type=metal_bar R=4mOhm
+
+print t T(b1) T(b2) T(b3) T(b4) Q(l1) Q(l2) Q(l3) Q(l4)
+
+run 6s 0.1s

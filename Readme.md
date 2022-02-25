@@ -30,7 +30,6 @@ Consider a block with temperature `T` with external heating power `dQ`.
 Entropy of the block `S` depends on temperature and maybe other
 parameters (magnetic field `B`).
 
-
 Then `dQ = T dS = C dT + D dB`, where `C =  T \partial S / \partial T)` is
 heat capacity, and `D = T \partial S / \partial B` - cooling power of
 demagnetization refrigerator (or how to call it better?). Using this
@@ -46,9 +45,9 @@ are known. For each link heat flows are calculated, Total power applied
 to each block is found. Using these values new temperatures of each block
 are found.
 
-Currently blocks with zero heat capacity are not supported. To implement
-this one should solve equation `Q(T) = 0` for such blocks at every step.
-
+If blocks have zero heat capacity they are calculated differently:
+before and after each step a zero of total heat flow on every such block
+is found as a function of temperaures of these blocks.
 
 #### Dimention parameter reading
 
@@ -62,7 +61,9 @@ Following types of blocks are supported:
 * `block <name> <temperature> type=bath` -- A heat bath with intinite heat capacity and
 constant temperature.
 
-* `block <name> <temperature> type=bath C=<value>` -- A block with constant heat capacity.
+* `block <name> <temperature> type=zero-c` -- A block with zero heat capacity.
+
+* `block <name> <temperature> type=simple C=<value>` -- A block with constant heat capacity.
 
 * `block <name> <temperature> type=paramagnet [parameters]` -- paramagnetic material
 (e.g. copper nuclei). Parameters:
