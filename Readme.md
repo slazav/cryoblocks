@@ -79,3 +79,16 @@ Following types of links are supported:
 * `link <name> <block1> <block2> type=const` -- A constant heat transfer. Not a physical process,
 but good for tests.
 
+* `link <name> <block1> <block2> type=metal_bar R=<v>` -- A bar made of metal.
+Total resistance R, Wiedemann-Franz low is used to calculate heat conductivity.
+
+* `link <name> <block1> <block2> type=simple_bar [paramters]` -- A bar made of some material
+with Ka*T^Kb heat conductivity [W/m/K]. Length L, cross-section area S. Parameters:
+  * `material=<v>` -- torlon4203, GRP, nylon, G10-CR, macor, stycast1266, stycast2850ft,
+     araldite_ct200, CuNi, Manganin. 
+  * `Ka=<v>` -- Ka, overrides value set by `material` parameter
+  * `Kb=<v>` -- Kb, overrides value set by `material` parameter
+  * `S=<v>`  -- cross-section area of the bar
+  * `L=<v>`  -- bar length
+
+
