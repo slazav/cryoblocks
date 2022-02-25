@@ -38,18 +38,21 @@ class Calculator {
   /***********************************/
 
   // get temperature of a block
-  double get_block_temp(const std::string & name){
+  double get_block_temp(const std::string & name) const {
     auto b = temps.find(name);
     if (b==temps.end()) throw Err() << "Unknown block: " << name;
     return b->second;
   }
 
   // get heat flow through a link
-  double get_link_flow(const std::string & name){
-    if (links.count(name)==0) throw Err() << "Unknown link: " << name;
-    auto T1 = get_block_temp(conn[name].first);
-    auto T2 = get_block_temp(conn[name].second);
-    return links[name]->get_qdot(T1,T2);
+  double get_link_flow(const std::string & name) const {
+    auto l = links.find(name);
+    auto c = conn.find(name);
+    if (l==links.end() || c==conn.end())
+      throw Err() << "Unknown link: " << name;
+    auto T1 = get_block_temp(c->second.first);
+    auto T2 = get_block_temp(c->second.second);
+    return l->second->get_qdot(T1,T2);
   }
 
   void set_magn_field(const double v) {B = v;}
