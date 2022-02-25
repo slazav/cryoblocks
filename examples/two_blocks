@@ -1,0 +1,12 @@
+#!../cryoblocks
+
+# Two blocks with constant heat copacity conncted with a
+# metal link
+
+block a 4K    type=simple C=1uJ/K
+block b 0.1K  type=simple C=1uJ/K
+link l1 a b   type=metal_bar R=1Ohm
+
+print t T(a) T(b)
+
+run 100s 1s

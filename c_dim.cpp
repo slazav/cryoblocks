@@ -41,6 +41,35 @@ read_temp(const std::string & str){
 }
 
 double
+read_length(const std::string & str){
+  std::istringstream ss(str);
+  double v=0;
+  std::string u;
+  ss >> v >> u;
+  if (u=="m") return v;
+  if (u=="cm") return 1e-2*v;
+  if (u=="mm") return 1e-3*v;
+  if (u=="um") return 1e-6*v;
+  if (u=="nm") return 1e-9*v;
+  throw Err() << "Unknown length unit: " << str;
+}
+
+double
+read_area(const std::string & str){
+  std::istringstream ss(str);
+  double v=0;
+  std::string u;
+  ss >> v >> u;
+  if (u=="m^2") return v;
+  if (u=="cm^2") return 1e-4*v;
+  if (u=="mm^2") return 1e-6*v;
+  if (u=="um^2") return 1e-12*v;
+  if (u=="nm^2") return 1e-18*v;
+  throw Err() << "Unknown area unit: " << str;
+}
+
+
+double
 read_heat_cap(const std::string & str){
   std::istringstream ss(str);
   double v=0;
@@ -135,5 +164,21 @@ read_gyro(const std::string & str){
   ss >> v >> u;
   if (u=="rad/s/T") return v;
   if (u=="rad/s/G")  return v*1e4;
+  throw Err() << "Unknown unit for gyromagnetic ratio: " << str;
+}
+
+double
+read_resistance(const std::string & str){
+  std::istringstream ss(str);
+  double v=0;
+  std::string u;
+  ss >> v >> u;
+  if (u=="Ohm")  return v;
+  if (u=="kOhm") return v*1e3;
+  if (u=="MOhm") return v*1e6;
+  if (u=="GOhm") return v*1e9;
+  if (u=="mOhm") return v*1e-3;
+  if (u=="uOhm") return v*1e-6;
+  if (u=="nOhm") return v*1e-9;
   throw Err() << "Unknown unit for gyromagnetic ratio: " << str;
 }
