@@ -2,7 +2,7 @@
 
 # Simple demag of a copper block
 
-block a 10mK   type=paramagnet material=copper nmol=1
+block a 10mK   type=paramagnet material=copper moles=1
 
 field 7T
 field_rate -0.1T/s

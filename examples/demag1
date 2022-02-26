@@ -3,7 +3,7 @@
 # Demag of a copper block
 # Something more realistic then in simple_demag
 
-block Cu_n 10mK   type=paramagnet material=copper nmol=1
+block Cu_n 10mK   type=paramagnet material=copper moles=1
 block Cu_e 10mK   type=zero-c
 block bath 300K   type=bath
 

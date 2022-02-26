@@ -45,7 +45,7 @@ class BlockParamagn: public BlockBase {
   double Bint; // internal field [T]
   double gyro; // gyromagnetic ratio [rad/s/T]
   double spin; // 1/2, 3/2, etc.
-  double nmole; // number of moles
+  double moles; // number of moles
 
   double hbar = 1.05457181710e-34; // [J s]
   double NA = 6.02214086e+23;      // [1/mol] Avogadro's Constant
@@ -53,13 +53,13 @@ class BlockParamagn: public BlockBase {
   double R = NA*kB;                // R-constant, [J/mol/K]
 
   public:
-    BlockParamagn(const double Bint, const double gyro, const double spin, const double nmole):
-      Bint(Bint), gyro(gyro), spin(spin), nmole(nmole){}
+    BlockParamagn(const double Bint, const double gyro, const double spin, const double moles):
+      Bint(Bint), gyro(gyro), spin(spin), moles(moles){}
 
     double get_dt(const double dQ, const double T, const double B, const double dB) const override{
       double x = gyro*hbar*sqrt(B*B + Bint*Bint)/kB/T/2.0;
       double y = (2.0*spin + 1.0)*x;
-      double C = R*nmole *(pow(x/sinh(x),2) - pow(y/sinh(y),2));
+      double C = R*moles *(pow(x/sinh(x),2) - pow(y/sinh(y),2));
       // dT = dQ/C - D/C dB
       // We want to find D/C = (dS/dB)/(dS/dT). S depends only on A = T/sqrt(B*B + Bint*Bint)
       // Then D/C = (dA/dB) / (dA/dT) = - T*B/(B*B + Bint*Bint)
@@ -102,9 +102,9 @@ std::shared_ptr<BlockBase> create_block(
 
   // A block with paramagnetic heat capacity
   if (type == "paramagnet") {
-    auto opts = get_key_val_args(b,e, {"type=", "Bint=", "gyro=", "spin=", "material=", "nmol="});
+    auto opts = get_key_val_args(b,e, {"type=", "Bint=", "gyro=", "spin=", "material=", "moles="});
 
-    double Bint=0, gyro=0, spin=0, nmol=0;
+    double Bint=0, gyro=0, spin=0, moles=0;
 
     if (opts["material"] == "copper"){
       Bint = 0.36e-3;    // [T], dipolar feld in copper
@@ -116,15 +116,15 @@ std::shared_ptr<BlockBase> create_block(
       gyro = 203.789e6; // [rad/s/T] gyromagnetic ratio, helium-3
       spin = 0.5;       // spin 1/2, helium-3
     }
-    if (opts["Bint"] != "") Bint = read_magn_field(opts["Bint"]);
-    if (opts["gyro"] != "") gyro = read_gyro(opts["gyro"]);
-    if (opts["spin"] != "") spin = read_dimensionless(opts["spin"]);
-    if (opts["nmol"] != "") nmol = read_dimensionless(opts["nmol"]);
-    if (Bint <= 0) throw Err() << "A positive value expected: Bint";
-    if (gyro <= 0) throw Err() << "A positive value expected: gyro";
-    if (spin <= 0) throw Err() << "A positive value expected: spin";
-    if (nmol <= 0) throw Err() << "A positive value expected: nmol";
-    return std::shared_ptr<BlockBase>(new BlockParamagn(Bint, gyro, spin, nmol));
+    if (opts["Bint"]  != "") Bint  = read_magn_field(opts["Bint"]);
+    if (opts["gyro"]  != "") gyro  = read_gyro(opts["gyro"]);
+    if (opts["spin"]  != "") spin  = read_dimensionless(opts["spin"]);
+    if (opts["moles"] != "") moles = read_dimensionless(opts["moles"]);
+    if (Bint  <= 0) throw Err() << "A positive value expected: Bint";
+    if (gyro  <= 0) throw Err() << "A positive value expected: gyro";
+    if (spin  <= 0) throw Err() << "A positive value expected: spin";
+    if (moles <= 0) throw Err() << "A positive value expected: moles";
+    return std::shared_ptr<BlockBase>(new BlockParamagn(Bint, gyro, spin, moles));
   }
   throw Err() << "unknown block type: " << type;
 }
