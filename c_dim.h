@@ -15,5 +15,6 @@ double read_magn_field(const std::string & str);
 double read_magn_field_rate(const std::string & str);
 double read_gyro(const std::string & str);
 double read_resistance(const std::string & str);
+double read_kappa(const std::string & str); // Karringa constant K*s
 
 #endif

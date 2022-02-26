@@ -1,0 +1,20 @@
+#!../cryoblocks
+
+# Demag of a copper block
+# Something more realistic then in simple_demag
+
+block Cu_n 10mK   type=paramagnet material=copper nmol=1
+block Cu_e 10mK   type=zero-c
+block bath 300K   type=bath
+
+link  n_e  Cu_n Cu_e type=korringa material=copper moles=1
+link  ext1   bath Cu_e type=const Qdot=1nW
+
+print B T(Cu_n) T(Cu_e) Q(n_e)
+
+field 0.7T
+field_rate -0.01T/s
+
+run 70s 0.01s
+
+

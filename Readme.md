@@ -92,4 +92,14 @@ with Ka*T^Kb heat conductivity [W/m/K]. Length L, cross-section area S. Paramete
   * `S=<v>`  -- cross-section area of the bar
   * `L=<v>`  -- bar length
 
+* `link <name> <block1> <block2> type=korringa [parameters]` --
+Spin-lattice coupling (heat flow from nuclear spin system and electrons,
+Korringa low). Parameters:
 
+  * `material=<v>` -- predefined values for. Variants: copper
+  * `Bint=<v>` -- internal field (overrides value set by `material` parameter), default 0
+  * `gyro=<v>` -- gyromagnetic ratio (overrides value set by `material` parameter)
+  * `spin=<v>` -- spin (overrides value set by `material` parameter)
+  * `kappa=<v>` -- high-field value of Karringa constant (overrides value set by `material` parameter)
+  * `alpha=<v>` -- parameter alpha in field dependence of Karringa constant (overrides value set by `material` parameter), default 0
+  * `moles=<v>` -- number of moles

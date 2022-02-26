@@ -182,3 +182,12 @@ read_resistance(const std::string & str){
   if (u=="nOhm") return v*1e-9;
   throw Err() << "Unknown unit for gyromagnetic ratio: " << str;
 }
+
+double read_kappa(const std::string & str){
+  std::istringstream ss(str);
+  double v=0;
+  std::string u;
+  ss >> v >> u;
+  if (u=="K*s")  return v;
+  throw Err() << "Unknown unit for Korringa constant: " << str;
+}

@@ -53,7 +53,7 @@ class Calculator {
       throw Err() << "Unknown link: " << name;
     auto T1 = get_block_temp(c->second.first);
     auto T2 = get_block_temp(c->second.second);
-    return l->second->get_qdot(T1,T2);
+    return l->second->get_qdot(T1,T2,B);
   }
 
   void set_magn_field(const double v) {B = v;}
@@ -211,13 +211,13 @@ class Calculator {
       // temperatures of both blocks and flow between them:
       auto T1 = temps[b1n];
       auto T2 = temps[b2n];
-      auto qdot = l.second->get_qdot(T1,T2);
+      auto qdot = l.second->get_qdot(T1,T2,B);
 
       // If block1 is zero-c block, add to
       // Q(block1), dQ(block1)/dT1, dQ(block2)/dT1
       if (b1->is_zero_c()){
         auto T1a = T1*(1+rstep);
-        auto qdota = l.second->get_qdot(T1a,T2);
+        auto qdota = l.second->get_qdot(T1a,T2,B);
         auto dqdt1 = (qdota-qdot)/(T1a-T1);
         auto i = num[b1n];
         *gsl_vector_ptr(Q, i) -= -qdot;
@@ -230,7 +230,7 @@ class Calculator {
       // Same for block2
       if (b2->is_zero_c()){
         auto T2a = T2*(1+rstep);
-        auto qdota = l.second->get_qdot(T1,T2a);
+        auto qdota = l.second->get_qdot(T1,T2a,B);
         auto dqdt2 = (qdota-qdot)/(T2a-T2);
         auto i = num[b2n];
         *gsl_vector_ptr(Q,i) += -qdot;
