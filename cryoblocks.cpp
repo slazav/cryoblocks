@@ -190,6 +190,7 @@ class Calculator {
     size_t nzblocks = 0;
     for (const auto & b : blocks)
       if (b.second->is_zero_c()) num[b.first] = nzblocks++;
+    if (nzblocks==0) return 0;
 
     // Q - Heat flow to each zero-C block;
     // dQdT - Derivative dQi/dTj for i,j in zero-c blocks.
