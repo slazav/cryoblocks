@@ -204,3 +204,21 @@ read_mass(const std::string & str){
   throw Err() << "Unknown unit for mass: " << str;
 }
 
+double
+read_pressure(const std::string & str){
+  std::istringstream ss(str);
+  double v=0;
+  std::string u;
+  ss >> v >> u;
+  if (u=="Pa")  return v;
+  if (u=="kPa")   return v*1e3;
+  if (u=="MPa")   return v*1e6;
+  if (u=="GPa")   return v*1e9;
+  if (u=="bar")   return v*1e5;
+  if (u=="mbar")   return v*1e2;
+  if (u=="psi")   return v*6894.76;
+  if (u=="atm")   return v*101325;
+  if (u=="torr")  return v*133.322;
+  throw Err() << "Unknown unit for pressure: " << str;
+}
+
