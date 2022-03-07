@@ -8,6 +8,7 @@ double read_time(const std::string & str);
 double read_temp(const std::string & str);
 double read_length(const std::string & str);
 double read_area(const std::string & str);
+double read_volume(const std::string & str);
 double read_heat_cap(const std::string & str);
 double read_power(const std::string & str);
 double read_heat_cond(const std::string & str);

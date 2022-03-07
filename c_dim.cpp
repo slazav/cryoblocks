@@ -68,6 +68,21 @@ read_area(const std::string & str){
   throw Err() << "Unknown area unit: " << str;
 }
 
+double
+read_volume(const std::string & str){
+  std::istringstream ss(str);
+  double v=0;
+  std::string u;
+  ss >> v >> u;
+  if (u=="m^3") return v;
+  if (u=="l")   return 1e-3*v;
+  if (u=="cm^3") return 1e-6*v;
+  if (u=="mm^3") return 1e-9*v;
+  if (u=="um^3") return 1e-18*v;
+  if (u=="nm^3") return 1e-27*v;
+  throw Err() << "Unknown volume unit: " << str;
+}
+
 
 double
 read_heat_cap(const std::string & str){
