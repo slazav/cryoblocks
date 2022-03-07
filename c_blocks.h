@@ -12,6 +12,8 @@
 class BlockBase {
   public:
 
+  typedef std::vector<std::string>::const_iterator str_cit;
+
   // Calculate temperature change.
   // dQ = T dS = T(partial dS/dT) dT + T(partial dS/dB) dB
   virtual double get_dt(
@@ -23,11 +25,26 @@ class BlockBase {
 
 /********************************************************************/
 // Simple block with a constant heat capacity. This can be also used for
-// a thermal bath (C=INFINITY)
+// a thermal bath (C=INFINITY) or zero-c blocks
 class BlockSimple: public BlockBase {
     double C;
 
   public:
+
+    static std::shared_ptr<BlockBase> create(const str_cit & b, const str_cit & e){
+      auto opts = get_key_val_args(b,e, {"type=", "C=1J/K"});
+      return std::shared_ptr<BlockBase>(new BlockSimple(read_heat_cap(opts["C"])));
+    }
+
+    static std::shared_ptr<BlockBase> create_bath(const str_cit & b, const str_cit & e){
+      auto opts = get_key_val_args(b,e, {"type="});
+      return std::shared_ptr<BlockBase>(new BlockSimple(INFINITY));
+    }
+
+    static std::shared_ptr<BlockBase> create_zero(const str_cit & b, const str_cit & e){
+      auto opts = get_key_val_args(b,e, {"type="});
+      return std::shared_ptr<BlockBase>(new BlockSimple(0));
+    }
 
     BlockSimple(const double C): C(C){}
     double get_dt(const double dQ, const double T, const double B, const double dB) const override {
@@ -53,6 +70,32 @@ class BlockParamagn: public BlockBase {
   double R = NA*kB;                // R-constant, [J/mol/K]
 
   public:
+
+    static std::shared_ptr<BlockBase> create(const str_cit & b, const str_cit & e){
+      auto opts = get_key_val_args(b,e, {"type=", "Bint=", "gyro=", "spin=", "material=", "moles="});
+      double Bint=0, gyro=0, spin=0, moles=0;
+
+      if (opts["material"] == "copper"){
+        Bint = 0.36e-3;    // [T], dipolar feld in copper
+        gyro = 71.118e6;   // [rad/s/T] gyromagnetic ratio of copper
+        spin = 1.5;        // spin 3/2
+      }
+      if (opts["material"] == "he3"){
+        Bint = 720e-3;    // [T], dipolar feld in solid helium-3
+        gyro = 203.789e6; // [rad/s/T] gyromagnetic ratio, helium-3
+        spin = 0.5;       // spin 1/2, helium-3
+      }
+      if (opts["Bint"]  != "") Bint  = read_magn_field(opts["Bint"]);
+      if (opts["gyro"]  != "") gyro  = read_gyro(opts["gyro"]);
+      if (opts["spin"]  != "") spin  = read_dimensionless(opts["spin"]);
+      if (opts["moles"] != "") moles = read_dimensionless(opts["moles"]);
+      if (Bint  <= 0) throw Err() << "A positive value expected: Bint";
+      if (gyro  <= 0) throw Err() << "A positive value expected: gyro";
+      if (spin  <= 0) throw Err() << "A positive value expected: spin";
+      if (moles <= 0) throw Err() << "A positive value expected: moles";
+      return std::shared_ptr<BlockBase>(new BlockParamagn(Bint, gyro, spin, moles));
+    }
+
     BlockParamagn(const double Bint, const double gyro, const double spin, const double moles):
       Bint(Bint), gyro(gyro), spin(spin), moles(moles){}
 
@@ -81,51 +124,11 @@ std::shared_ptr<BlockBase> create_block(
   // extract type parameter
   auto type = get_key_val(b,e, "type");
   if (type == "") throw Err() << "block type is not set";
+  if (type == "bath") { return BlockSimple::create_bath(b,e);}
+  if (type == "zero-c") { return BlockSimple::create_zero(b,e);}
+  if (type == "simple") { return BlockSimple::create(b,e);}
+  if (type == "paramagnet") { return BlockParamagn::create(b,e); }
 
-  // thermal bath, infinite heat capacity
-  if (type == "bath") {
-    auto opts = get_key_val_args(b,e, {"type="});
-    return std::shared_ptr<BlockBase>(new BlockSimple(INFINITY));
-  }
-
-  // a block with zero heat capacity
-  if (type == "zero-c") {
-    auto opts = get_key_val_args(b,e, {"type="});
-    return std::shared_ptr<BlockBase>(new BlockSimple(0));
-  }
-
-  // simple block with a constant heat capacity
-  if (type == "simple") {
-    auto opts = get_key_val_args(b,e, {"type=", "C=1J/K"});
-    return std::shared_ptr<BlockBase>(new BlockSimple(read_heat_cap(opts["C"])));
-  }
-
-  // A block with paramagnetic heat capacity
-  if (type == "paramagnet") {
-    auto opts = get_key_val_args(b,e, {"type=", "Bint=", "gyro=", "spin=", "material=", "moles="});
-
-    double Bint=0, gyro=0, spin=0, moles=0;
-
-    if (opts["material"] == "copper"){
-      Bint = 0.36e-3;    // [T], dipolar feld in copper
-      gyro = 71.118e6;   // [rad/s/T] gyromagnetic ratio of copper
-      spin = 1.5;        // spin 3/2
-    }
-    if (opts["material"] == "he3"){
-      Bint = 720e-3;    // [T], dipolar feld in solid helium-3
-      gyro = 203.789e6; // [rad/s/T] gyromagnetic ratio, helium-3
-      spin = 0.5;       // spin 1/2, helium-3
-    }
-    if (opts["Bint"]  != "") Bint  = read_magn_field(opts["Bint"]);
-    if (opts["gyro"]  != "") gyro  = read_gyro(opts["gyro"]);
-    if (opts["spin"]  != "") spin  = read_dimensionless(opts["spin"]);
-    if (opts["moles"] != "") moles = read_dimensionless(opts["moles"]);
-    if (Bint  <= 0) throw Err() << "A positive value expected: Bint";
-    if (gyro  <= 0) throw Err() << "A positive value expected: gyro";
-    if (spin  <= 0) throw Err() << "A positive value expected: spin";
-    if (moles <= 0) throw Err() << "A positive value expected: moles";
-    return std::shared_ptr<BlockBase>(new BlockParamagn(Bint, gyro, spin, moles));
-  }
   throw Err() << "unknown block type: " << type;
 }
 #endif
