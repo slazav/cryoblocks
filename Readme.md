@@ -106,3 +106,12 @@ Korringa low). Parameters:
   * `moles=<v>` -- number of moles
   * `mass=<v>` -- if material is set then mass can be used instead of moles
 
+* `link <name> <block1> <block2> type=el-ph [parameters]` --
+Electron-phonon coupling (Qdot = C*(T1^5-T2^5)*nmoles, see Pobell book f.10.9).
+Parameters:
+
+  * `material=<v>` -- predefined values for. Variants: copper
+  * `C=<v>` -- set parameter C (overrides value set by `material` parameter), default 0
+  * `moles=<v>` -- number of moles
+  * `mass=<v>` -- if material is set then mass can be used instead of moles
+

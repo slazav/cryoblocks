@@ -166,6 +166,44 @@ class LinkKorringa: public LinkBase {
     }
 };
 
+/********************************************************************/
+// Electron-phonon coupling  Qdot = C*(Tph^5-Tel^5)
+// C = 2e3 * 7.11 cm^3/mole * Nmoles  for copper
+// See Pobell book, f.10.9
+class LinkElPh: public LinkBase {
+  double C;
+
+  public:
+    LinkElPh(const double C): C(C){;}
+
+    double get_qdot(const double T1, const double T2, const double B) const override {
+      return (pow(T1,5)-pow(T2,5))*C;
+    }
+
+    static std::shared_ptr<LinkBase> create (const str_cit & b, const str_cit & e) {
+      auto opts = get_key_val_args(b,e,
+        {"type=", "C=", "moles=", "material=", "mass="});
+
+      double C=0, moles=0;
+
+      if (opts["material"] == "copper"){
+        C = 2e3 * 7.11;
+        if (opts["mass"]!="") moles = read_mass(opts["mass"])/63.546e-3;
+      }
+      else {
+        if (opts["mass"]!="") throw Err() << "mass parameter can be used only together with material";
+      }
+
+      if (opts["C"]      != "") C = read_dimensionless(opts["C"]);
+      if (opts["moles"]  != "") moles = read_dimensionless(opts["moles"]);
+
+      if (C      <= 0) throw Err() << "A positive value expected: C";
+      if (moles  <= 0) throw Err() << "A positive value expected: moles";
+
+      return std::shared_ptr<LinkBase>(new LinkElPh(C*moles));
+    }
+};
+
 
 /********************************************************************/
 /********************************************************************/
@@ -183,6 +221,7 @@ std::shared_ptr<LinkBase> create_link(
   if (type=="simple_bar") return LinkSimpleBar::create(b,e);
   if (type=="metal_bar")  return LinkMetalBar::create(b,e);
   if (type=="korringa")   return LinkKorringa::create(b,e);
+  if (type=="el_ph")      return LinkElPh::create(b,e);
 
   throw Err() << "unknown link type: " << type;
 }
