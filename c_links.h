@@ -105,7 +105,7 @@ class LinkKorringa: public LinkBase {
   double spin; // 1/2, 3/2, etc.
   double kappa0; // high-field value of Korringa constant
   double alpha;  // alpha parameter in field dependence of kappa
-  double nmole;  // number of moles
+  double moles;  // number of moles
 
   double hbar = 1.05457181710e-34; // [J s]
   double NA = 6.02214086e+23;      // [1/mol] Avogadro's Constant
@@ -117,15 +117,15 @@ class LinkKorringa: public LinkBase {
   public:
     LinkKorringa(const double Bint, const double gyro,
                  const double spin, const double kappa0,
-                 const double alpha, const double nmole):
+                 const double alpha, const double moles):
                    Bint(Bint), gyro(gyro), spin(spin), kappa0(kappa0),
-                   alpha(alpha), nmole(nmole){;}
+                   alpha(alpha), moles(moles){;}
 
     double get_qdot(const double T1, const double T2, const double B) const override {
       // heat capacity of copper nuclei:
       double x = gyro*hbar*sqrt(B*B + Bint*Bint)/kB/T1/2.0;
       double y = (2.0*spin + 1.0)*x;
-      double C = R*nmole *(pow(x/sinh(x),2) - pow(y/sinh(y),2));
+      double C = R*moles *(pow(x/sinh(x),2) - pow(y/sinh(y),2));
 
       // See Pobell book f.10.10 and below
       double kappa = kappa0 * (B*B + Bint*Bint)/(B*B + alpha*Bint*Bint);
@@ -136,9 +136,9 @@ class LinkKorringa: public LinkBase {
 
     static std::shared_ptr<LinkBase> create (const str_cit & b, const str_cit & e) {
       auto opts = get_key_val_args(b,e,
-        {"type=", "Bint=", "gyro=", "spin=", "kappa0=", "alpha=", "moles=", "material="});
+        {"type=", "Bint=", "gyro=", "spin=", "kappa0=", "alpha=", "moles=", "material=", "mass="});
 
-      double Bint=0, gyro=0, spin=0, kappa0=0, alpha=0, nmol=0;
+      double Bint=0, gyro=0, spin=0, kappa0=0, alpha=0, moles=0;
 
       if (opts["material"] == "copper"){
         Bint = 0.36e-3;    // [T], dipolar feld in copper
@@ -146,6 +146,10 @@ class LinkKorringa: public LinkBase {
         spin = 1.5;        // spin 3/2
         kappa0 = 1.2;
         alpha  = 2.6;
+        if (opts["mass"]!="") moles = read_mass(opts["mass"])/63.546e-3;
+      }
+      else {
+        if (opts["mass"]!="") throw Err() << "mass parameter can be used only together with material";
       }
 
       if (opts["Bint"]   != "") Bint = read_magn_field(opts["Bint"]);
@@ -153,12 +157,12 @@ class LinkKorringa: public LinkBase {
       if (opts["spin"]   != "") spin = read_dimensionless(opts["spin"]);
       if (opts["kappa0"] != "") kappa0 = read_kappa(opts["kappa0"]);
       if (opts["alpha"]  != "") alpha  = read_dimensionless(opts["alpha"]);
-      if (opts["moles"]  != "") nmol = read_dimensionless(opts["moles"]);
+      if (opts["moles"]  != "") moles = read_dimensionless(opts["moles"]);
       if (gyro   <= 0) throw Err() << "A positive value expected: gyro";
       if (spin   <= 0) throw Err() << "A positive value expected: spin";
       if (kappa0 <= 0) throw Err() << "A positive value expected: kappa0";
-      if (nmol   <= 0) throw Err() << "A positive value expected: moles";
-      return std::shared_ptr<LinkBase>(new LinkKorringa(Bint, gyro, spin, kappa0, alpha, nmol));
+      if (moles  <= 0) throw Err() << "A positive value expected: moles";
+      return std::shared_ptr<LinkBase>(new LinkKorringa(Bint, gyro, spin, kappa0, alpha, moles));
     }
 };
 

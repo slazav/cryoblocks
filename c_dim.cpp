@@ -191,3 +191,16 @@ double read_kappa(const std::string & str){
   if (u=="K*s")  return v;
   throw Err() << "Unknown unit for Korringa constant: " << str;
 }
+
+double
+read_mass(const std::string & str){
+  std::istringstream ss(str);
+  double v=0;
+  std::string u;
+  ss >> v >> u;
+  if (u=="kg")  return v;
+  if (u=="g")   return v*1e-3;
+  if (u=="mg") return v*1e-6;
+  throw Err() << "Unknown unit for mass: " << str;
+}
+

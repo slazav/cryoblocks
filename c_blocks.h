@@ -72,18 +72,23 @@ class BlockParamagn: public BlockBase {
   public:
 
     static std::shared_ptr<BlockBase> create(const str_cit & b, const str_cit & e){
-      auto opts = get_key_val_args(b,e, {"type=", "Bint=", "gyro=", "spin=", "material=", "moles="});
+      auto opts = get_key_val_args(b,e, {"type=", "Bint=", "gyro=", "spin=", "material=", "moles=", "mass="});
       double Bint=0, gyro=0, spin=0, moles=0;
 
       if (opts["material"] == "copper"){
         Bint = 0.36e-3;    // [T], dipolar feld in copper
         gyro = 71.118e6;   // [rad/s/T] gyromagnetic ratio of copper
         spin = 1.5;        // spin 3/2
+        if (opts["mass"]!="") moles = read_mass(opts["mass"])/63.546e-3;
       }
-      if (opts["material"] == "he3"){
+      else if (opts["material"] == "he3"){
         Bint = 720e-3;    // [T], dipolar feld in solid helium-3
         gyro = 203.789e6; // [rad/s/T] gyromagnetic ratio, helium-3
         spin = 0.5;       // spin 1/2, helium-3
+        if (opts["mass"]!="") moles = read_mass(opts["mass"])/3.016029e-3;
+      }
+      else {
+        if (opts["mass"]!="") throw Err() << "mass parameter can be used only together with material";
       }
       if (opts["Bint"]  != "") Bint  = read_magn_field(opts["Bint"]);
       if (opts["gyro"]  != "") gyro  = read_gyro(opts["gyro"]);

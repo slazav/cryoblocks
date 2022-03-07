@@ -71,7 +71,8 @@ constant temperature.
   * `Bint=<v>` -- internal field (overrides value set by `material` parameter)
   * `gyro=<v>` -- gyromagnetic ratio (overrides value set by `material` parameter)
   * `spin=<v>` -- spin (overrides value set by `material` parameter)
-  * `nmol=<v>` -- number of mols
+  * `moles=<v>` -- number of moles
+  * `mass=<v>` -- if material is set then mass can be used instead of moles
 
 #### Links
 
@@ -103,3 +104,5 @@ Korringa low). Parameters:
   * `kappa=<v>` -- high-field value of Karringa constant (overrides value set by `material` parameter)
   * `alpha=<v>` -- parameter alpha in field dependence of Karringa constant (overrides value set by `material` parameter), default 0
   * `moles=<v>` -- number of moles
+  * `mass=<v>` -- if material is set then mass can be used instead of moles
+
