@@ -1,6 +1,6 @@
 #include <iostream>
 #include <sstream>
-#include "c_err.h"
+#include "inc/err.h"
 #include "c_args.h"
 
 std::ostream &

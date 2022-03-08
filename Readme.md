@@ -74,6 +74,12 @@ constant temperature.
   * `moles=<v>` -- Number of moles.
   * `mass=<v>` -- If material is set then mass can be used instead of moles.
 
+* `block <name> <temperature> type=liquid_he3 [parameters]` -- liquid He3. Parameters:
+  * `P=<v>` -- Pressure
+  * `moles=<v>` -- Number of moles
+  * `mass=<v>` -- Can be used instead of moles.
+  * `volume=<v>` -- Can be used instead of moles (pressure-dependent molar volume is used).
+
 #### Links
 
 Following types of links are supported:

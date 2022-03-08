@@ -1,6 +1,8 @@
 #ifndef C_READ_DIM_H
 #define C_READ_DIM_H
 
+#include <string>
+
 // Read parameters with dimensions
 
 double read_dimensionless(const std::string & str);

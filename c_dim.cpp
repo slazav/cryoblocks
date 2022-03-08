@@ -1,5 +1,6 @@
+#include <string>
 #include <sstream>
-#include "c_err.h"
+#include "inc/err.h"
 
 double
 read_dimensionless(const std::string & str){

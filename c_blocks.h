@@ -2,6 +2,7 @@
 #define C_BLOCKS_H
 
 #include <memory>
+#include <cmath>
 
 #include "c_dim.h"
 
@@ -24,44 +25,51 @@ class BlockBase {
 };
 
 /********************************************************************/
-// Simple block with a constant heat capacity. This can be also used for
-// a thermal bath (C=INFINITY) or zero-c blocks
+// Simple block with a constant heat capacity. Can have zero heat capacity.
 class BlockSimple: public BlockBase {
-    double C;
+    double C=0;
 
   public:
 
-    enum Type {SIMPLE, ZERO, BATH};
-
-    BlockSimple(const str_cit & b, const str_cit & e, const Type t){
-      Opt opts;
-      switch (t){
-        case SIMPLE:
-          opts = get_key_val_args(b,e, {"type=", "C=1J/K"});
-          C = read_heat_cap(opts["C"]);
-          break;
-        case ZERO:
-          opts = get_key_val_args(b,e, {"type="});
-          C = 0;
-          break;
-        case BATH:
-          opts = get_key_val_args(b,e, {"type="});
-          C = INFINITY;
-          break;
-        default:
-          throw Err() << "BlockSimple: unknown type";
-      }
+    BlockSimple(const str_cit & b, const str_cit & e){
+      auto opts = get_key_val_args(b,e, {"type=", "C="});
+      if (opts["C"] != "") C = read_heat_cap(opts["C"]);
     }
 
     double get_dt(const double dQ, const double T, const double B, const double dB) const override {
-       return dQ/C;
-    }
+       return dQ/C; }
 
     // simple block can have zero heat capacity
-    bool is_zero_c() const {return C==0;}
+    bool is_zero_c() const override {return C==0;}
 };
 
+/********************************************************************/
+//  Thermal bath, block with infinite heat capacity.
+class BlockBath: public BlockBase {
+  public:
 
+    BlockBath(const str_cit & b, const str_cit & e){
+      auto opts = get_key_val_args(b,e, {"type="}); }
+
+    double get_dt(const double dQ, const double T, const double B, const double dB) const override {
+       return 0; }
+};
+
+/********************************************************************/
+//  block with zero heat capacity.
+class BlockZero: public BlockBase {
+  public:
+
+    BlockZero(const str_cit & b, const str_cit & e){
+      auto opts = get_key_val_args(b,e, {"type="}); }
+
+    double get_dt(const double dQ, const double T, const double B, const double dB) const override {
+       return INFINITY; }
+
+    bool is_zero_c() const override {return true;}
+};
+
+/********************************************************************/
 // A block with paramegnetic heat capacity
 class BlockParamagn: public BlockBase {
 
@@ -125,9 +133,10 @@ extern "C" {
 #include <he3.h>
 }
 
-// LiquidHe3
+/********************************************************************/
+// Liquid He3
 // No A-phase support!
-class BlockHe3: public BlockBase {
+class BlockLHe3: public BlockBase {
 
   double P=0;  // pressure [bar]
   double Tc; // Tc, K
@@ -139,18 +148,17 @@ class BlockHe3: public BlockBase {
 
   public:
 
-    BlockHe3(const str_cit & b, const str_cit & e){
+    BlockLHe3(const str_cit & b, const str_cit & e){
       auto opts = get_key_val_args(b,e, {"type=", "P=", "moles=", "mass=", "volume="});
 
       if (opts["P"]       != "") P     = read_pressure(opts["P"])/1e5; // Pa -> bar
-      if (opts["moles"]   != "") moles = read_dimensionless(opts["moles"]);
       if (opts["mass"]    != "") moles = read_mass(opts["mass"]) / 3.016029e-3;
       if (opts["volume"]  != "") moles = read_volume(opts["volume"])*1e-6 / he3_vm_(&P);
 
+      if (opts["moles"]   != "") moles = read_dimensionless(opts["moles"]);
       if (moles <= 0) throw Err() << "A positive value expected: moles";
       Tc = he3_tc_(&P);
     }
-
 
     // no support for A-phase!
     double get_dt(const double dQ, const double T, const double B, const double dB) const override{
@@ -179,14 +187,25 @@ std::shared_ptr<BlockBase> create_block(
   // extract type parameter
   auto type = get_key_val(b,e, "type");
   if (type == "") throw Err() << "block type is not set";
-  if (type == "bath")       { return std::shared_ptr<BlockBase>(new BlockSimple(b,e, BlockSimple::BATH));}
-  if (type == "zero-c")     { return std::shared_ptr<BlockBase>(new BlockSimple(b,e, BlockSimple::ZERO));}
-  if (type == "simple")     { return std::shared_ptr<BlockBase>(new BlockSimple(b,e, BlockSimple::SIMPLE));}
-  if (type == "paramagnet") { return std::shared_ptr<BlockBase>(new BlockParamagn(b,e)); }
+
+  if (type == "bath") {
+    return std::shared_ptr<BlockBase>(new BlockBath(b,e));}
+  if (type == "zero-c") {
+    return std::shared_ptr<BlockBase>(new BlockZero(b,e));}
+  if (type == "simple") {
+    return std::shared_ptr<BlockBase>(new BlockSimple(b,e));}
+  if (type == "paramagnet") {
+    return std::shared_ptr<BlockBase>(new BlockParamagn(b,e)); }
+
 #ifdef HE3
-  if (type == "he3")        { return std::shared_ptr<BlockBase>(new BlockHe3(b,e)); }
+  if (type == "liquid_he3") {
+    return std::shared_ptr<BlockBase>(new BlockLHe3(b,e)); }
 #endif
 
   throw Err() << "unknown block type: " << type;
 }
+
+std::shared_ptr<BlockBase> create_block(const std::vector<std::string> & v) {
+  return create_block(v.begin(), v.end());}
+
 #endif

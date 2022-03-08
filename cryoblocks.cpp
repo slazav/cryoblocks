@@ -9,7 +9,7 @@
 #include <cmath>
 #include <cstring>
 
-#include "c_err.h"
+#include "inc/err.h"
 #include "c_args.h"
 #include "c_blocks.h"
 #include "c_links.h"

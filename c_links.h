@@ -25,8 +25,8 @@ class LinkConst: public LinkBase {
 
     /*****************/
     LinkConst(const str_cit & b, const str_cit & e) {
-      auto opts = get_key_val_args(b,e, {"type=", "Qdot=0W"});
-      Q = read_power(opts["Qdot"]);
+      auto opts = get_key_val_args(b,e, {"type=", "Qdot="});
+      if (opts["Qdot"]!="") Q = read_power(opts["Qdot"]);
     }
 
     /*****************/
@@ -247,15 +247,18 @@ std::shared_ptr<LinkBase> create_link(
   // extract type
   auto type = get_key_val(b,e, "type");
   if (type == "")   throw Err() << "link type is not set";
-  if (type=="const")      return std::shared_ptr<LinkBase>(new LinkConst(b,e));
-  if (type=="simple_bar") return std::shared_ptr<LinkBase>(new LinkSimpleBar(b,e));
-  if (type=="metal_bar")  return std::shared_ptr<LinkBase>(new LinkMetalBar(b,e));
-  if (type=="korringa")   return std::shared_ptr<LinkBase>(new LinkKorringa(b,e));
-  if (type=="el_ph")      return std::shared_ptr<LinkBase>(new LinkElPh(b,e));
-  if (type=="kap_res")    return std::shared_ptr<LinkBase>(new LinkKapRes(b,e));
+  if (type=="const")       return std::shared_ptr<LinkBase>(new LinkConst(b,e));
+  if (type=="simple_bar")  return std::shared_ptr<LinkBase>(new LinkSimpleBar(b,e));
+  if (type=="metal_bar")   return std::shared_ptr<LinkBase>(new LinkMetalBar(b,e));
+  if (type=="korringa")    return std::shared_ptr<LinkBase>(new LinkKorringa(b,e));
+  if (type=="el_ph")       return std::shared_ptr<LinkBase>(new LinkElPh(b,e));
+  if (type=="kap_res_he3") return std::shared_ptr<LinkBase>(new LinkKapRes(b,e));
 
   throw Err() << "unknown link type: " << type;
 }
+
+std::shared_ptr<LinkBase> create_link(const std::vector<std::string> & v) {
+  return create_link(v.begin(), v.end());}
 
 
 #endif
