@@ -134,17 +134,17 @@ class Calculator {
     // print table header
     std::cout << "#" << print_list << "\n";
 
+    // find and set temperatures of zero-C blocks
+    double max = 1e-3;
+    for (int i=0; i<100; i++){
+      max = adjust_zero_c_temps(max);
+      if (max < 1e-6) break;
+      if (i==99) throw Err() << "Can't find temperatures of zero-C blocks";
+    }
+
     // time cycle
     te+=t;
     for (; t<=te; t+=dt){
-
-      // find and set temperatures of zero-C blocks
-      double max = 1e-3;
-      for (int i=0; i<100; i++){
-        max = adjust_zero_c_temps(max);
-        if (max < 1e-6) break;
-        if (i==99) throw Err() << "Can't find temperatures of zero-C blocks";
-      }
 
       // find heat flows to each block
       std::map<std::string, double> bq;
@@ -166,7 +166,7 @@ class Calculator {
         temps[n] += b.second->get_dt(dQ, T, B, Bdot*dt);
       }
 
-      // repeat calculation of zero-C blocks to have then in the equilibrium after the step
+      // repeat calculation of zero-C blocks to have them in the equilibrium after each step
       max = 1e-3;
       for (int i=0; i<100; i++){
         max = adjust_zero_c_temps(max);
