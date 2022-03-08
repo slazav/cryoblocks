@@ -260,8 +260,11 @@ class Calculator {
       e << "\nMatrix:\n";
       for (const auto & n : num){
         e << n.first << ": ";
-        for (int i=0; i<nzblocks; i++) e << " " << gsl_matrix_get(dQdT,n.second, i);
-        e << " -- " << gsl_vector_get(Q,n.second) << "\n";
+        e << "\tQ=" << gsl_vector_get(Q,n.second);
+        e << "\tT=" << temps[n.first];
+        e << "\tdQ/dT_j=";
+        for (int i=0; i<nzblocks; i++) e << " " << gsl_matrix_get(dQdT, n.second, i);
+        e << "\n";
       }
       gsl_permutation_free(p);
       gsl_vector_free(Q);
