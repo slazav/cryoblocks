@@ -153,11 +153,11 @@ class BlockLHe3: public BlockBase {
 
       if (opts["P"]       != "") P     = read_pressure(opts["P"])/1e5; // Pa -> bar
       if (opts["mass"]    != "") moles = read_mass(opts["mass"]) / 3.016029e-3;
-      if (opts["volume"]  != "") moles = read_volume(opts["volume"])*1e-6 / he3_vm_(&P);
+      if (opts["volume"]  != "") moles = read_volume(opts["volume"])*1e6 / he3_vm_(&P);
 
       if (opts["moles"]   != "") moles = read_dimensionless(opts["moles"]);
       if (moles <= 0) throw Err() << "A positive value expected: moles";
-      Tc = he3_tc_(&P);
+      Tc = he3_tc_(&P)*1e-3;
     }
 
     // no support for A-phase!
