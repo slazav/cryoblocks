@@ -169,6 +169,14 @@ read_magn_field_rate(const std::string & str){
   if (u=="kG/m")  return v*1e-1/60.0;
   if (u=="Oe/m")  return v*1e-4/60.0;
   if (u=="kOe/m") return v*1e-1/60.0;
+  if (u=="T/h")   return v/3600.0;
+  if (u=="mT/h")  return v*1e-3/3600.0;
+  if (u=="uT/h")  return v*1e-6/3600.0;
+  if (u=="nT/h")  return v*1e-9/3600.0;
+  if (u=="G/h")   return v*1e-4/3600.0;
+  if (u=="kG/h")  return v*1e-1/3600.0;
+  if (u=="Oe/h")  return v*1e-4/3600.0;
+  if (u=="kOe/h") return v*1e-1/3600.0;
   throw Err() << "Unknown magnetic field rate unit: " << str;
 }
 
