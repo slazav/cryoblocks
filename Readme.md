@@ -67,12 +67,12 @@ constant temperature.
 
 * `block <name> <temperature> type=paramagnet [parameters]` -- paramagnetic material
 (e.g. copper nuclei). Parameters:
-  * `material=<v>` -- `copper` (nuclei), `he3` (solid)
-  * `Bint=<v>` -- internal field (overrides value set by `material` parameter)
-  * `gyro=<v>` -- gyromagnetic ratio (overrides value set by `material` parameter)
-  * `spin=<v>` -- spin (overrides value set by `material` parameter)
-  * `moles=<v>` -- number of moles
-  * `mass=<v>` -- if material is set then mass can be used instead of moles
+  * `material=<v>` -- Set parameters `Bint`, `gyro`, `spin` for a certain material: `copper` (nuclei), `he3` (solid).
+  * `Bint=<v>` -- Internal field (overrides value set by `material` parameter), default 0.
+  * `gyro=<v>` -- Gyromagnetic ratio (overrides value set by `material` parameter).
+  * `spin=<v>` -- Spin (overrides value set by `material` parameter).
+  * `moles=<v>` -- Number of moles.
+  * `mass=<v>` -- If material is set then mass can be used instead of moles.
 
 #### Links
 
@@ -94,7 +94,7 @@ with Ka*T^Kb heat conductivity [W/m/K]. Length L, cross-section area S. Paramete
   * `L=<v>`  -- bar length
 
 * `link <name> <block1> <block2> type=korringa [parameters]` --
-Spin-lattice coupling (heat flow from nuclear spin system and electrons,
+Spin-lattice coupling (heat flow between nuclear spin system and electrons,
 Korringa low). Parameters:
 
   * `material=<v>` -- predefined values for. Variants: copper
@@ -102,7 +102,7 @@ Korringa low). Parameters:
   * `gyro=<v>` -- gyromagnetic ratio (overrides value set by `material` parameter)
   * `spin=<v>` -- spin (overrides value set by `material` parameter)
   * `kappa=<v>` -- high-field value of Karringa constant (overrides value set by `material` parameter)
-  * `alpha=<v>` -- parameter alpha in field dependence of Karringa constant (overrides value set by `material` parameter), default 0
+  * `alpha=<v>` -- parameter alpha in field dependence of Karringa constant (overrides value set by `material` parameter), default 1
   * `moles=<v>` -- number of moles
   * `mass=<v>` -- if material is set then mass can be used instead of moles
 
@@ -114,4 +114,7 @@ Parameters:
   * `C=<v>` -- set parameter C (overrides value set by `material` parameter), default 0
   * `moles=<v>` -- number of moles
   * `mass=<v>` -- if material is set then mass can be used instead of moles
+
+* `link <name> <block1> <block2> type=kap_res_he3 area=<S>` --
+Kapitza resistance between He3 and solids. `R = 900/T/S [W]` for temperature `T` and area `S`.
 

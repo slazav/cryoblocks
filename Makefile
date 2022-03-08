@@ -1,7 +1,7 @@
 TARGETS=cryoblocks
 
-LDLIBS= -lm -lgsl
-CPPFLAGS=-std=c++11
+LDLIBS= -lm -lgsl -lhe3
+CPPFLAGS=-std=c++11 -DHE3 -g
 CC=g++
 
 all: $(TARGETS)

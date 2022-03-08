@@ -31,22 +31,28 @@ class BlockSimple: public BlockBase {
 
   public:
 
-    static std::shared_ptr<BlockBase> create(const str_cit & b, const str_cit & e){
-      auto opts = get_key_val_args(b,e, {"type=", "C=1J/K"});
-      return std::shared_ptr<BlockBase>(new BlockSimple(read_heat_cap(opts["C"])));
+    enum Type {SIMPLE, ZERO, BATH};
+
+    BlockSimple(const str_cit & b, const str_cit & e, const Type t){
+      Opt opts;
+      switch (t){
+        case SIMPLE:
+          opts = get_key_val_args(b,e, {"type=", "C=1J/K"});
+          C = read_heat_cap(opts["C"]);
+          break;
+        case ZERO:
+          opts = get_key_val_args(b,e, {"type="});
+          C = 0;
+          break;
+        case BATH:
+          opts = get_key_val_args(b,e, {"type="});
+          C = INFINITY;
+          break;
+        default:
+          throw Err() << "BlockSimple: unknown type";
+      }
     }
 
-    static std::shared_ptr<BlockBase> create_bath(const str_cit & b, const str_cit & e){
-      auto opts = get_key_val_args(b,e, {"type="});
-      return std::shared_ptr<BlockBase>(new BlockSimple(INFINITY));
-    }
-
-    static std::shared_ptr<BlockBase> create_zero(const str_cit & b, const str_cit & e){
-      auto opts = get_key_val_args(b,e, {"type="});
-      return std::shared_ptr<BlockBase>(new BlockSimple(0));
-    }
-
-    BlockSimple(const double C): C(C){}
     double get_dt(const double dQ, const double T, const double B, const double dB) const override {
        return dQ/C;
     }
@@ -59,10 +65,10 @@ class BlockSimple: public BlockBase {
 // A block with paramegnetic heat capacity
 class BlockParamagn: public BlockBase {
 
-  double Bint; // internal field [T]
-  double gyro; // gyromagnetic ratio [rad/s/T]
-  double spin; // 1/2, 3/2, etc.
-  double moles; // number of moles
+  double Bint=0; // internal field [T]
+  double gyro=0; // gyromagnetic ratio [rad/s/T]
+  double spin=0; // 1/2, 3/2, etc.
+  double moles=0; // number of moles
 
   double hbar = 1.05457181710e-34; // [J s]
   double NA = 6.02214086e+23;      // [1/mol] Avogadro's Constant
@@ -71,9 +77,8 @@ class BlockParamagn: public BlockBase {
 
   public:
 
-    static std::shared_ptr<BlockBase> create(const str_cit & b, const str_cit & e){
+    BlockParamagn(const str_cit & b, const str_cit & e){
       auto opts = get_key_val_args(b,e, {"type=", "Bint=", "gyro=", "spin=", "material=", "moles=", "mass="});
-      double Bint=0, gyro=0, spin=0, moles=0;
 
       if (opts["material"] == "copper"){
         Bint = 0.36e-3;    // [T], dipolar feld in copper
@@ -91,18 +96,16 @@ class BlockParamagn: public BlockBase {
         if (opts["mass"]!="") throw Err() << "mass parameter can be used only together with material";
       }
       if (opts["Bint"]  != "") Bint  = read_magn_field(opts["Bint"]);
-      if (opts["gyro"]  != "") gyro  = read_gyro(opts["gyro"]);
-      if (opts["spin"]  != "") spin  = read_dimensionless(opts["spin"]);
-      if (opts["moles"] != "") moles = read_dimensionless(opts["moles"]);
-      if (Bint  <= 0) throw Err() << "A positive value expected: Bint";
-      if (gyro  <= 0) throw Err() << "A positive value expected: gyro";
-      if (spin  <= 0) throw Err() << "A positive value expected: spin";
-      if (moles <= 0) throw Err() << "A positive value expected: moles";
-      return std::shared_ptr<BlockBase>(new BlockParamagn(Bint, gyro, spin, moles));
-    }
 
-    BlockParamagn(const double Bint, const double gyro, const double spin, const double moles):
-      Bint(Bint), gyro(gyro), spin(spin), moles(moles){}
+      if (opts["gyro"]  != "") gyro  = read_gyro(opts["gyro"]);
+      if (gyro  <= 0) throw Err() << "A positive value expected: gyro";
+
+      if (opts["spin"]  != "") spin  = read_dimensionless(opts["spin"]);
+      if (spin  <= 0) throw Err() << "A positive value expected: spin";
+
+      if (opts["moles"] != "") moles = read_dimensionless(opts["moles"]);
+      if (moles <= 0) throw Err() << "A positive value expected: moles";
+    }
 
     double get_dt(const double dQ, const double T, const double B, const double dB) const override{
       double x = gyro*hbar*sqrt(B*B + Bint*Bint)/kB/T/2.0;
@@ -117,6 +120,53 @@ class BlockParamagn: public BlockBase {
 
 };
 
+#ifdef HE3
+extern "C" {
+#include <he3.h>
+}
+
+// LiquidHe3
+// No A-phase support!
+class BlockHe3: public BlockBase {
+
+  double P=0;  // pressure [bar]
+  double Tc; // Tc, K
+  double moles;
+
+  double NA = 6.02214086e+23;      // [1/mol] Avogadro's Constant
+  double kB = 1.38064852e-23;      // [m^2 kg s-2 K-1] [J/K] Boltzmann constant
+  double R = NA*kB;                // R-constant, [J/mol/K]
+
+  public:
+
+    BlockHe3(const str_cit & b, const str_cit & e){
+      auto opts = get_key_val_args(b,e, {"type=", "P=", "moles=", "mass=", "volume="});
+
+      if (opts["P"]       != "") P     = read_pressure(opts["P"])/1e5; // Pa -> bar
+      if (opts["moles"]   != "") moles = read_dimensionless(opts["moles"]);
+      if (opts["mass"]    != "") moles = read_mass(opts["mass"]) / 3.016029e-3;
+      if (opts["volume"]  != "") moles = read_volume(opts["volume"])*1e-6 / he3_vm_(&P);
+
+      if (moles <= 0) throw Err() << "A positive value expected: moles";
+      Tc = he3_tc_(&P);
+    }
+
+
+    // no support for A-phase!
+    double get_dt(const double dQ, const double T, const double B, const double dB) const override{
+      double p(P), t(T), ttc(T/Tc);
+      if (T > Tc) return dQ/(he3_c_n_(&t,&p)*R*moles);
+      else {
+        double ttc = T/Tc;
+        return dQ/(he3_c_b_(&ttc,&p)*R*moles);
+      }
+    }
+
+};
+
+#endif
+
+
 /********************************************************************/
 /********************************************************************/
 
@@ -129,10 +179,13 @@ std::shared_ptr<BlockBase> create_block(
   // extract type parameter
   auto type = get_key_val(b,e, "type");
   if (type == "") throw Err() << "block type is not set";
-  if (type == "bath") { return BlockSimple::create_bath(b,e);}
-  if (type == "zero-c") { return BlockSimple::create_zero(b,e);}
-  if (type == "simple") { return BlockSimple::create(b,e);}
-  if (type == "paramagnet") { return BlockParamagn::create(b,e); }
+  if (type == "bath")       { return std::shared_ptr<BlockBase>(new BlockSimple(b,e, BlockSimple::BATH));}
+  if (type == "zero-c")     { return std::shared_ptr<BlockBase>(new BlockSimple(b,e, BlockSimple::ZERO));}
+  if (type == "simple")     { return std::shared_ptr<BlockBase>(new BlockSimple(b,e, BlockSimple::SIMPLE));}
+  if (type == "paramagnet") { return std::shared_ptr<BlockBase>(new BlockParamagn(b,e)); }
+#ifdef HE3
+  if (type == "he3")        { return std::shared_ptr<BlockBase>(new BlockHe3(b,e)); }
+#endif
 
   throw Err() << "unknown block type: " << type;
 }
