@@ -17,6 +17,8 @@
 
 #include <gsl/gsl_linalg.h>
 
+void my_gsl_handler (const char * reason, const char * file, int line, int gsl_errno){ return; }
+
 class Calculator {
   std::map<std::string, std::shared_ptr<BlockBase> > blocks; // storage for blocks
   std::map<std::string, std::shared_ptr<LinkBase> >  links;  // links, block thermal connections
@@ -248,8 +250,24 @@ class Calculator {
     int s;
     gsl_vector *DT = gsl_vector_alloc(nzblocks);
     gsl_permutation *p = gsl_permutation_alloc (nzblocks);
-    gsl_linalg_LU_decomp (dQdT, p, &s);
-    gsl_linalg_LU_solve (dQdT, p, Q, DT);
+    try {
+      int status = gsl_linalg_LU_decomp (dQdT, p, &s);
+      if (status) throw Err() << "Error while solving zero-c blocks: " << gsl_strerror(status);
+      status = gsl_linalg_LU_solve (dQdT, p, Q, DT);
+      if (status) throw Err() << "Error while solving zero-c blocks: " << gsl_strerror(status);
+    }
+    catch (Err & e){
+      e << "\nMatrix:\n";
+      for (const auto & n : num){
+        e << n.first << ": ";
+        for (int i=0; i<nzblocks; i++) e << " " << gsl_matrix_get(dQdT,n.second, i);
+        e << " -- " << gsl_vector_get(Q,n.second) << "\n";
+      }
+      gsl_permutation_free(p);
+      gsl_vector_free(Q);
+      gsl_matrix_free(dQdT);
+      throw;
+    }
     gsl_permutation_free(p);
     gsl_vector_free(Q);
     gsl_matrix_free(dQdT);
@@ -278,6 +296,7 @@ main(int argc, char *argv[]){
 try{
 
   Calculator calc;
+  gsl_set_error_handler (&my_gsl_handler);
 
   // program should be run with one argument - name of command file
   if (argc!=2){
