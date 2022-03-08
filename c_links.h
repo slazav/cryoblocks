@@ -230,7 +230,6 @@ class LinkKapRes: public LinkBase {
 
     /*****************/
     double get_qdot(const double T1, const double T2, const double B) const override {
-      std::cerr << "K> " << T1 << " " << T2 << " " << (T1-T2) * (T1+T2)/2.0 /900.0/area << "\n";
       return (T1-T2) * (T1+T2)/2.0 /900.0 * area;
     }
 };
