@@ -123,7 +123,7 @@ class Calculator {
       if (v == "t"){ std::cout << t; continue;
       }
     }
-    std::cout << "\n";
+    if (print_list.size()>0) std::cout << "\n";
   }
 
   /***********************************/
