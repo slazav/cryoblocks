@@ -213,27 +213,39 @@ class LinkElPh: public LinkBase {
 
 /********************************************************************/
 // Kapitza resistance between He3 and solid
-// R = 900/T [K^2/m^2/W]
+// power=1:  R = 900/T/area [K^2/m^2/W]
+// power=2:  R = 41/T^2/area -- Dilution fridge heat exchanger with fine silver powder, see Y.Takano-1994
+// power=3:  R = 0.1/T^3/area -- Dilution fridge heat exchanger with coarse silver powder, see Y.Takano-1994
+
 class LinkKapRes: public LinkBase {
-  double area=0;
+  double area = 0;
+  int power = 1
 
   public:
 
     /*****************/
     LinkKapRes(const str_cit & b, const str_cit & e) {
-      auto opts = get_key_val_args(b,e, {"type=", "area="});
+      auto opts = get_key_val_args(b,e, {"type=", "area=", "power="});
 
-      area=0;
-      if (opts["area"] != "") area = read_area(opts["area"]);
+      if (opts["area"]  != "") area = read_area(opts["area"]);
+      if (opts["power"] != "") power = read_dimensionless(opts["power"]);
       if (area <= 0) throw Err() << "A positive value expected: area";
+      if (power < 1 || power > 3) throw Err() << "Unknown power setting (should be 1, 2, or 3)";
     }
 
     /*****************/
     double get_qdot(const double T1, const double T2, const double B) const override {
-      return (T1-T2) * (T1+T2)/2.0 /900.0 * area;
+      double T = (T1+T2)/2.0;
+      double R;
+      switch (power) {
+        case 1: R = 900.0/T; break;
+        case 2: R = 41.0/T/T; break;
+        case 3: R = 0.1/T/T/T; break;
+        default: throw Err() << "unknown power setting for Kapitza resistance: " << power
+      }
+      return (T1-T2)/R * area;
     }
 };
-
 
 /********************************************************************/
 /********************************************************************/

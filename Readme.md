@@ -121,6 +121,7 @@ Parameters:
   * `moles=<v>` -- number of moles
   * `mass=<v>` -- if material is set then mass can be used instead of moles
 
-* `link <name> <block1> <block2> type=kap_res_he3 area=<S>` --
+* `link <name> <block1> <block2> type=kap_res_he3 area=<S> power=<N>` --
 Kapitza resistance between He3 and solids. `R = 900/T/S [W]` for temperature `T` and area `S`.
+Power should be 1, 2, or 3.
 
