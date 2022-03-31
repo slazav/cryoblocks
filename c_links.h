@@ -235,15 +235,14 @@ class LinkKapRes: public LinkBase {
 
     /*****************/
     double get_qdot(const double T1, const double T2, const double B) const override {
-      double T = (T1+T2)/2.0;
-      double R;
+      double RR;
       switch (power) {
-        case 1: R = 900.0/T; break;
-        case 2: R = 41.0/T/T; break;
-        case 3: R = 0.1/T/T/T; break;
+        case 1: RR=900.0; break;
+        case 2: RR=41.0; break;
+        case 3: RR=0.1; break;
         default: throw Err() << "unknown power setting for Kapitza resistance: " << power;
       }
-      return (T1-T2)/R * area;
+      return area/((power+1)*RR)  * (pow(T1,power+1)-pow(T2,power+1));
     }
 };
 
