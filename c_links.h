@@ -219,7 +219,7 @@ class LinkElPh: public LinkBase {
 
 class LinkKapRes: public LinkBase {
   double area = 0;
-  int power = 1
+  int power = 1;
 
   public:
 
@@ -241,11 +241,52 @@ class LinkKapRes: public LinkBase {
         case 1: R = 900.0/T; break;
         case 2: R = 41.0/T/T; break;
         case 3: R = 0.1/T/T/T; break;
-        default: throw Err() << "unknown power setting for Kapitza resistance: " << power
+        default: throw Err() << "unknown power setting for Kapitza resistance: " << power;
       }
       return (T1-T2)/R * area;
     }
 };
+
+// Cooling power of a dilution refrigerator.
+// block1 should be mixing chamber, block2 - thermal bath at any temperature.
+class LinkDil: public LinkBase {
+  double ndot = 0;
+  public:
+    /*****************/
+    LinkDil(const str_cit & b, const str_cit & e) {
+      auto opts = get_key_val_args(b,e, {"type=", "ndot="});
+      if (opts["ndot"]  != "") ndot = read_circ(opts["ndot"]);
+      if (ndot <= 0) throw Err() << "A positive value expected: ndot";
+    }
+    /*****************/
+    double get_qdot(const double T1, const double T2, const double B) const override {
+      return 84*T1*T1*ndot; }
+};
+
+// Heat transfer by circulation in a dilution refrigerator.
+// Phase parameter is "C" or "D".
+// T2 is not used in the calculation.
+class LinkCirc: public LinkBase {
+  double ndot = 0;
+  int    phase = 0;
+  public:
+    /*****************/
+    LinkCirc(const str_cit & b, const str_cit & e) {
+      auto opts = get_key_val_args(b,e, {"type=", "ndot=", "phase="});
+      if (opts["ndot"]  != "") ndot = read_circ(opts["ndot"]);
+      if (opts["phase"] == "C")  phase=1;
+      if (opts["phase"] == "D")  phase=2;
+      if (ndot <= 0) throw Err() << "A positive value expected: ndot";
+      if (phase<1 || phase>2) throw Err() << "Value is missing: phase (expected C or D)";
+    }
+    /*****************/
+    double get_qdot(const double T1, const double T2, const double B) const override {
+      if (phase == 1) return  23*T1*T1*ndot;
+      if (phase == 2) return 107*T1*T1*ndot;
+      throw Err() << "Wrong value of phase parameter: " << phase;
+    }
+};
+
 
 /********************************************************************/
 /********************************************************************/
@@ -265,6 +306,8 @@ std::shared_ptr<LinkBase> create_link(
   if (type=="korringa")    return std::shared_ptr<LinkBase>(new LinkKorringa(b,e));
   if (type=="el_ph")       return std::shared_ptr<LinkBase>(new LinkElPh(b,e));
   if (type=="kap_res_he3") return std::shared_ptr<LinkBase>(new LinkKapRes(b,e));
+  if (type=="dilution_cooling") return std::shared_ptr<LinkBase>(new LinkDil(b,e));
+  if (type=="dilution_circ")    return std::shared_ptr<LinkBase>(new LinkCirc(b,e));
 
   throw Err() << "unknown link type: " << type;
 }

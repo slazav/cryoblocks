@@ -125,3 +125,11 @@ Parameters:
 Kapitza resistance between He3 and solids. `R = 900/T/S [W]` for temperature `T` and area `S`.
 Power should be 1, 2, or 3.
 
+
+* `link <name> <block1> <block2> type=dilution_cooling ndot=<V>`
+Cooling power of a dilution refrigerator.  block1 should be mixing
+chamber, block2 - thermal bath at any temperature.
+
+* `link <name> <block1> <block2> type=dilution_circ ndot=<V> phase=<C|D>`
+Heat transfer by circulation in a dilution refrigerator. Phase parameter is "C" or "D".
+T2 is not used in the calculation.

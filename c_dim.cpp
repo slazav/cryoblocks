@@ -246,3 +246,15 @@ read_pressure(const std::string & str){
   throw Err() << "Unknown unit for pressure: " << str;
 }
 
+double
+read_circ(const std::string & str){
+  std::istringstream ss(str);
+  double v=0;
+  std::string u;
+  ss >> v >> u;
+  if (u=="mol/s") return v;
+  if (u=="mmol/s") return v*1e-3;
+  if (u=="umol/s") return v*1e-6;
+  throw Err() << "Unknown unit for circulation: " << str;
+}
+
