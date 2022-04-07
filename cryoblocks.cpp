@@ -135,12 +135,7 @@ class Calculator {
     std::cout << "#" << print_list << "\n";
 
     // find and set temperatures of zero-C blocks
-    double max = 1e-3;
-    for (int i=0; i<100; i++){
-      max = adjust_zero_c_temps(max);
-      if (max < 1e-6) break;
-      if (i==99) throw Err() << "Can't find temperatures of zero-C blocks";
-    }
+    set_zero_c();
 
     // time cycle
     te+=t;
@@ -167,12 +162,7 @@ class Calculator {
       }
 
       // repeat calculation of zero-C blocks to have them in the equilibrium after each step
-      max = 1e-3;
-      for (int i=0; i<100; i++){
-        max = adjust_zero_c_temps(max);
-        if (max < 1e-6) break;
-        if (i==99) throw Err() << "Can't find temperatures of zero-C blocks";
-      }
+      set_zero_c();
 
       print_data();
 
@@ -185,7 +175,7 @@ class Calculator {
   // Return maximum of relative temperature change dT/T.
   // Parameter rstep is a relative temperature step (dT/T) for
   // estimating derivatives.
-  double adjust_zero_c_temps(double rstep) {
+  double set_zero_c_step(double rstep) {
 
     // count zero-c blocks
     std::map<std::string, size_t> num; // name -> number
@@ -286,6 +276,17 @@ class Calculator {
     gsl_vector_free(DT);
 
     return max;
+  }
+
+  // Do zero-c calculation
+  void set_zero_c() {
+    // find and set temperatures of zero-C blocks
+    double max = 1e-3;
+    for (int i=0; i<100; i++){
+      max = set_zero_c_step(max);
+      if (max < 1e-6) break;
+      if (i==99) throw Err() << "Can't find temperatures of zero-C blocks";
+    }
   }
 
 };
