@@ -33,7 +33,7 @@ class BlockSimple: public BlockBase {
 
     BlockSimple(const str_cit & b, const str_cit & e){
       auto opts = get_key_val_args(b,e, {"type=", "C="});
-      if (opts["C"] != "") C = read_heat_cap(opts["C"]);
+      if (opts["C"] != "") C = read_value(opts["C"], "J/K");
     }
 
     double get_dt(const double dQ, const double T, const double B, const double dB) const override {
@@ -92,26 +92,26 @@ class BlockParamagn: public BlockBase {
         Bint = 0.36e-3;    // [T], dipolar feld in copper
         gyro = 71.118e6;   // [rad/s/T] gyromagnetic ratio of copper
         spin = 1.5;        // spin 3/2
-        if (opts["mass"]!="") moles = read_mass(opts["mass"])/63.546e-3;
+        if (opts["mass"]!="") moles = read_value(opts["mass"], "kg")/63.546e-3;
       }
       else if (opts["material"] == "he3"){
         Bint = 720e-3;    // [T], dipolar feld in solid helium-3
         gyro = 203.789e6; // [rad/s/T] gyromagnetic ratio, helium-3
         spin = 0.5;       // spin 1/2, helium-3
-        if (opts["mass"]!="") moles = read_mass(opts["mass"])/3.016029e-3;
+        if (opts["mass"]!="") moles = read_value(opts["mass"], "kg")/3.016029e-3;
       }
       else {
         if (opts["mass"]!="") throw Err() << "mass parameter can be used only together with material";
       }
-      if (opts["Bint"]  != "") Bint  = read_magn_field(opts["Bint"]);
+      if (opts["Bint"]  != "") Bint  = read_value(opts["Bint"], "T");
 
-      if (opts["gyro"]  != "") gyro  = read_gyro(opts["gyro"]);
+      if (opts["gyro"]  != "") gyro  = read_value(opts["gyro"], "rad/s/T");
       if (gyro  <= 0) throw Err() << "A positive value expected: gyro";
 
-      if (opts["spin"]  != "") spin  = read_dimensionless(opts["spin"]);
+      if (opts["spin"]  != "") spin  = read_value(opts["spin"], "");
       if (spin  <= 0) throw Err() << "A positive value expected: spin";
 
-      if (opts["moles"] != "") moles = read_dimensionless(opts["moles"]);
+      if (opts["moles"] != "") moles = read_value(opts["moles"], "");
       if (moles <= 0) throw Err() << "A positive value expected: moles";
     }
 
@@ -151,11 +151,11 @@ class BlockLHe3: public BlockBase {
     BlockLHe3(const str_cit & b, const str_cit & e){
       auto opts = get_key_val_args(b,e, {"type=", "P=", "moles=", "mass=", "volume="});
 
-      if (opts["P"]       != "") P     = read_pressure(opts["P"])/1e5; // Pa -> bar
-      if (opts["mass"]    != "") moles = read_mass(opts["mass"]) / 3.016029e-3;
-      if (opts["volume"]  != "") moles = read_volume(opts["volume"])*1e6 / he3_vm_(&P);
+      if (opts["P"]       != "") P     = read_value(opts["P"], "Pa")/1e5; // Pa -> bar
+      if (opts["mass"]    != "") moles = read_value(opts["mass"], "kg") / 3.016029e-3;
+      if (opts["volume"]  != "") moles = read_value(opts["volume"], "m^3")*1e6 / he3_vm_(&P);
 
-      if (opts["moles"]   != "") moles = read_dimensionless(opts["moles"]);
+      if (opts["moles"]   != "") moles = read_value(opts["moles"], "");
       if (moles <= 0) throw Err() << "A positive value expected: moles";
       Tc = he3_tc_(&P)*1e-3;
     }

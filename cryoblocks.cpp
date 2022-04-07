@@ -359,7 +359,7 @@ try{
     if (cmd == "block") {
       if (args.size() < 2)
         throw Err() << "Not enough arguments, expect: block <name> <temp> [options]";
-      calc.add_block(args[0], read_temp(args[1]), args.begin()+2, args.end());
+      calc.add_block(args[0], read_value(args[1], "K"), args.begin()+2, args.end());
       continue;
     }
 
@@ -375,7 +375,7 @@ try{
     if (cmd == "run") {
       if (args.size() != 2)
         throw Err() << "Wrong number of arguments. Expect: run <time> <time step>";
-      calc.run(read_time(args[0]), read_time(args[1]));
+      calc.run(read_value(args[0], "s"), read_value(args[1], "s"));
       continue;
     }
 
@@ -389,7 +389,7 @@ try{
     if (cmd == "field") {
       if (args.size() != 1)
         throw Err() << "Wrong number of arguments. Expect: field <B>";
-      calc.set_magn_field(read_magn_field(args[0]));
+      calc.set_magn_field(read_value(args[0], "T"));
       continue;
     }
 
@@ -397,7 +397,7 @@ try{
     if (cmd == "field_rate") {
       if (args.size() != 1)
         throw Err() << "Wrong number of arguments. Expect: field_rate <dB/dt>";
-      calc.set_magn_field_rate(read_magn_field_rate(args[0]));
+      calc.set_magn_field_rate(read_value(args[0], "T/s"));
       continue;
     }
 

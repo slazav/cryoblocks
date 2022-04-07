@@ -26,7 +26,7 @@ class LinkConst: public LinkBase {
     /*****************/
     LinkConst(const str_cit & b, const str_cit & e) {
       auto opts = get_key_val_args(b,e, {"type=", "Qdot="});
-      if (opts["Qdot"]!="") Q = read_power(opts["Qdot"]);
+      if (opts["Qdot"]!="") Q = read_value(opts["Qdot"], "W");
     }
 
     /*****************/
@@ -58,15 +58,15 @@ class LinkSimpleBar: public LinkBase {
       else if (opts["material"] == "CuNi")           { Ka = 6.5e-2; Kb=1.1; }
       else if (opts["material"] == "Manganin")       { Ka = 5.976e-2; Kb=1.02; }
 
-      if (opts["Ka"] != "") Ka = read_dimensionless(opts["Ka"]);
+      if (opts["Ka"] != "") Ka = read_value(opts["Ka"], "");
       if (Ka <= 0) throw Err() << "A positive value expected: Ka";
 
-      if (opts["Kb"] != "") Kb = read_dimensionless(opts["Kb"]);
+      if (opts["Kb"] != "") Kb = read_value(opts["Kb"], "");
 
-      if (opts["S"] != "") S = read_area(opts["S"]);
+      if (opts["S"] != "") S = read_value(opts["S"], "m^2");
       if (S  <= 0) throw Err() << "A positive value expected: S";
 
-      if (opts["L"] != "") L = read_length(opts["L"]);
+      if (opts["L"] != "") L = read_value(opts["L"], "m");
       if (L  <= 0) throw Err() << "A positive value expected: L";
 
       SL = S/L;
@@ -89,7 +89,7 @@ class LinkMetalBar: public LinkBase {
     /*****************/
     LinkMetalBar(const str_cit & b, const str_cit & e) {
       auto opts = get_key_val_args(b,e, {"type=", "R="});
-      if (opts["R"] != "") R = read_resistance(opts["R"]);
+      if (opts["R"] != "") R = read_value(opts["R"], "Ohm");
       if (R <= 0) throw Err() << "A positive value expected: R";
     }
 
@@ -132,26 +132,26 @@ class LinkKorringa: public LinkBase {
         spin = 1.5;        // spin 3/2
         kappa0 = 1.2;
         alpha  = 2.6;
-        if (opts["mass"]!="") moles = read_mass(opts["mass"])/63.546e-3;
+        if (opts["mass"]!="") moles = read_value(opts["mass"], "kg")/63.546e-3;
       }
       else {
         if (opts["mass"]!="") throw Err() << "mass parameter can be used only together with material";
       }
 
-      if (opts["Bint"]   != "") Bint = read_magn_field(opts["Bint"]);
+      if (opts["Bint"]   != "") Bint = read_value(opts["Bint"], "T");
 
-      if (opts["gyro"]   != "") gyro = read_gyro(opts["gyro"]);
+      if (opts["gyro"]   != "") gyro = read_value(opts["gyro"], "rad/s/T");
       if (gyro   <= 0) throw Err() << "A positive value expected: gyro";
 
-      if (opts["spin"]   != "") spin = read_dimensionless(opts["spin"]);
+      if (opts["spin"]   != "") spin = read_value(opts["spin"], "");
       if (spin   <= 0) throw Err() << "A positive value expected: spin";
 
-      if (opts["kappa0"] != "") kappa0 = read_kappa(opts["kappa0"]);
+      if (opts["kappa0"] != "") kappa0 = read_value(opts["kappa0"], "K*s");
       if (kappa0 <= 0) throw Err() << "A positive value expected: kappa0";
 
-      if (opts["alpha"]  != "") alpha  = read_dimensionless(opts["alpha"]);
+      if (opts["alpha"]  != "") alpha  = read_value(opts["alpha"], "");
 
-      if (opts["moles"]  != "") moles = read_dimensionless(opts["moles"]);
+      if (opts["moles"]  != "") moles = read_value(opts["moles"], "");
       if (moles  <= 0) throw Err() << "A positive value expected: moles";
     }
 
@@ -189,16 +189,16 @@ class LinkElPh: public LinkBase {
 
       if (opts["material"] == "copper"){
         C = 2e3 * 7.11;
-        if (opts["mass"]!="") moles = read_mass(opts["mass"])/63.546e-3;
+        if (opts["mass"]!="") moles = read_value(opts["mass"], "kg")/63.546e-3;
       }
       else {
         if (opts["mass"]!="") throw Err() << "mass parameter can be used only together with material";
       }
 
-      if (opts["C"]      != "") C = read_dimensionless(opts["C"]);
+      if (opts["C"]      != "") C = read_value(opts["C"], "");
       if (C      <= 0) throw Err() << "A positive value expected: C";
 
-      if (opts["moles"]  != "") moles = read_dimensionless(opts["moles"]);
+      if (opts["moles"]  != "") moles = read_value(opts["moles"], "");
       if (moles  <= 0) throw Err() << "A positive value expected: moles";
 
       CM=C*moles;
@@ -227,8 +227,8 @@ class LinkKapRes: public LinkBase {
     LinkKapRes(const str_cit & b, const str_cit & e) {
       auto opts = get_key_val_args(b,e, {"type=", "area=", "power="});
 
-      if (opts["area"]  != "") area = read_area(opts["area"]);
-      if (opts["power"] != "") power = read_dimensionless(opts["power"]);
+      if (opts["area"]  != "") area = read_value(opts["area"], "m^2");
+      if (opts["power"] != "") power = read_value(opts["power"], "");
       if (area <= 0) throw Err() << "A positive value expected: area";
       if (power < 1 || power > 3) throw Err() << "Unknown power setting (should be 1, 2, or 3)";
     }
@@ -254,7 +254,7 @@ class LinkDil: public LinkBase {
     /*****************/
     LinkDil(const str_cit & b, const str_cit & e) {
       auto opts = get_key_val_args(b,e, {"type=", "ndot="});
-      if (opts["ndot"]  != "") ndot = read_circ(opts["ndot"]);
+      if (opts["ndot"]  != "") ndot = read_value(opts["ndot"], "mol/s");
       if (ndot <= 0) throw Err() << "A positive value expected: ndot";
     }
     /*****************/
@@ -272,7 +272,7 @@ class LinkCirc: public LinkBase {
     /*****************/
     LinkCirc(const str_cit & b, const str_cit & e) {
       auto opts = get_key_val_args(b,e, {"type=", "ndot=", "phase="});
-      if (opts["ndot"]  != "") ndot = read_circ(opts["ndot"]);
+      if (opts["ndot"]  != "") ndot = read_value(opts["ndot"], "mol/s");
       if (opts["phase"] == "C")  phase=1;
       if (opts["phase"] == "D")  phase=2;
       if (ndot <= 0) throw Err() << "A positive value expected: ndot";
