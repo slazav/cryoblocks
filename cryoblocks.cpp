@@ -65,9 +65,10 @@ class Calculator {
   // Add a block
   void add_block(const std::string & name, const double temp,
                  const arg_cit & b, const arg_cit & e){
-    if (blocks.count(name)>0)
+    if (blocks.count(name)>0){
+      blocks.erase(name);
       std::cout << "# replacing existing block\n";
-
+    }
     temps.emplace(name, temp);
     blocks.emplace(name, create_block(b,e));
   }
@@ -79,9 +80,10 @@ class Calculator {
                 const arg_cit & b, const arg_cit & e){
     if (blocks.count(bl1) == 0) throw Err() << "no such block: " << bl1;
     if (blocks.count(bl2) == 0) throw Err() << "no such block: " << bl2;
-    if (links.count(name)>0)
+    if (links.count(name)>0){
+      links.erase(name);
       std::cout << "# replacing existing link\n";
-
+    }
     links.emplace(name, create_link(b,e));
     conn.emplace(name, std::make_pair(bl1, bl2));
   }
