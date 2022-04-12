@@ -35,6 +35,22 @@ class LinkConst: public LinkBase {
 };
 
 /********************************************************************/
+// Energy flow proportional to temperature difference, Qdot=K*(T1-T2).
+class LinkSimple: public LinkBase {
+    double K = 0;
+  public:
+
+    /*****************/
+    LinkSimple(const str_cit & b, const str_cit & e) {
+      auto opts = get_key_val_args(b,e, {"type=", "K="});
+      if (opts["K"]!="") K = read_value(opts["K"], "W/K");
+    }
+
+    /*****************/
+    double get_qdot(const double T1, const double T2, const double B) const override { return K*(T2-T1);}
+};
+
+/********************************************************************/
 // Bar made of material with heat conductivity K = Ka*T^Kb,
 // and area-to-length ratio SL [m].
 class LinkSimpleBar: public LinkBase {
@@ -300,6 +316,7 @@ std::shared_ptr<LinkBase> create_link(
   auto type = get_key_val(b,e, "type");
   if (type == "")   throw Err() << "link type is not set";
   if (type=="const")       return std::shared_ptr<LinkBase>(new LinkConst(b,e));
+  if (type=="simple")      return std::shared_ptr<LinkBase>(new LinkSimple(b,e));
   if (type=="simple_bar")  return std::shared_ptr<LinkBase>(new LinkSimpleBar(b,e));
   if (type=="metal_bar")   return std::shared_ptr<LinkBase>(new LinkMetalBar(b,e));
   if (type=="korringa")    return std::shared_ptr<LinkBase>(new LinkKorringa(b,e));

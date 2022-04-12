@@ -87,6 +87,9 @@ Following types of links are supported:
 * `link <name> <block1> <block2> type=const` -- A constant heat transfer. Not a physical process,
 but good for tests.
 
+* `link <name> <block1> <block2> type=simple K=<v>` -- Heat transfer proportional to temperature,
+`Qdot = K*(T1-T2)`.
+
 * `link <name> <block1> <block2> type=metal_bar R=<v>` -- A bar made of metal.
 Total resistance R, Wiedemann-Franz low is used to calculate heat conductivity.
 
