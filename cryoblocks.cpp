@@ -27,6 +27,7 @@ class Calculator {
   std::map<std::string, std::pair<std::string, std::string> > conn; // connections link -> block1,block2
 
   typedef std::vector<std::string>::const_iterator arg_cit;
+  typedef std::map<std::string, double> d_blpars;
 
   std::vector<std::string> print_list; // list of parameters to print
 
@@ -40,22 +41,43 @@ class Calculator {
   public:
   /***********************************/
 
+  // get block (shared_ptr), throw error if block does not exist
+  std::shared_ptr<BlockBase> get_block(const std::string & name) const {
+    auto b = blocks.find(name);
+    if (b==blocks.end()) throw Err() << "Unknown block: " << name;
+    return b->second;
+  }
+
+  // get link (shared_ptr), throw error if link does not exist
+  std::shared_ptr<LinkBase> get_link(const std::string & name) const {
+    auto l = links.find(name);
+    if (l==links.end()) throw Err() << "Unknown link: " << name;
+    return l->second;
+  }
+
+  // get connection (name1-name2 pair), throw error if link does not exist
+  std::pair<std::string, std::string> get_conn(const std::string & name) const {
+    auto c = conn.find(name);
+    if (c==conn.end()) throw Err() << "Unknown link: " << name;
+    return c->second;
+  }
+
   // get temperature of a block
-  double get_block_temp(const std::string & name) const {
+  double get_block_temp(const d_blpars & temps, const std::string & name) const {
     auto b = temps.find(name);
     if (b==temps.end()) throw Err() << "Unknown block: " << name;
     return b->second;
   }
 
+  /***********************************/
+
   // get heat flow through a link
-  double get_link_flow(const std::string & name) const {
-    auto l = links.find(name);
-    auto c = conn.find(name);
-    if (l==links.end() || c==conn.end())
-      throw Err() << "Unknown link: " << name;
-    auto T1 = get_block_temp(c->second.first);
-    auto T2 = get_block_temp(c->second.second);
-    return l->second->get_qdot(T1,T2,B);
+  double get_link_flow(const d_blpars & temps, const std::string & name) const {
+    auto l = get_link(name);
+    auto c = get_conn(name);
+    auto T1 = get_block_temp(temps, c.first);
+    auto T2 = get_block_temp(temps, c.second);
+    return l->get_qdot(T1,T2,B);
   }
 
   void set_magn_field(const double v) {B = v;}
@@ -95,7 +117,7 @@ class Calculator {
   }
 
   // print heat flows and temperatures according to print_list
-  void print_data() {
+  void print_data(d_blpars & temps) const {
     size_t n = 0;
     for (const auto v:print_list){
       if (n!=0) std::cout << "\t"; n++;
@@ -105,7 +127,7 @@ class Calculator {
         auto n = v.substr(2,v.size()-3);
         // extra check to have more understandable error message:
         if (blocks.count(n)==0) throw Err() << "Unknown block name for data output: " << n;
-        std::cout << get_block_temp(n); 
+        std::cout << get_block_temp(temps, n); 
         continue;
       }
 
@@ -114,7 +136,7 @@ class Calculator {
         auto n = v.substr(2,v.size()-3);
         // extra check to have more understandable error message:
         if (links.count(n)==0) throw Err() << "Unknown link name for data output: " << n;
-        std::cout << get_link_flow(n);
+        std::cout << get_link_flow(temps, n);
         continue;
       }
 
@@ -129,55 +151,16 @@ class Calculator {
   }
 
   /***********************************/
-  // Run a calculation for some time, print results
-  void run(double te, double dt){
-
-
-    // print table header
-    std::cout << "#" << print_list << "\n";
-
-    // find and set temperatures of zero-C blocks
-    set_zero_c();
-
-    // time cycle
-    te+=t;
-    for (; t<=te; t+=dt){
-
-      // find heat flows to each block
-      std::map<std::string, double> bq;
-      for (const auto & l : links){
-        auto n = l.first;
-        auto b1n = conn[n].first;
-        auto b2n = conn[n].second;
-        auto qdot = get_link_flow(n);
-        bq[b1n] = ((bq.count(b1n) == 0)? 0.0 : bq[b1n]) - qdot;
-        bq[b2n] = ((bq.count(b2n) == 0)? 0.0 : bq[b2n]) + qdot;
-      }
-
-      // find temperature change of each block (except zero-c)
-      for (const auto & b : blocks){
-        if (b.second->is_zero_c()) continue;
-        auto n = b.first;
-        auto dQ = bq.count(n)? bq[n] * dt : 0;
-        auto T  = get_block_temp(n);
-        temps[n] += b.second->get_dt(dQ, T, B, Bdot*dt);
-      }
-
-      // repeat calculation of zero-C blocks to have them in the equilibrium after each step
-      set_zero_c();
-
-      print_data();
-
-      // change magnetic field
-      B = B + Bdot*dt;
-    }
-  }
-
   // Do one step of zero-C temperature calculation.
-  // Return maximum of relative temperature change dT/T.
-  // Parameter rstep is a relative temperature step (dT/T) for
-  // estimating derivatives.
-  double set_zero_c_step(double rstep) {
+  // Arguments:
+  //   temps - input: block temperatures
+  //           return: modified temperatures
+  //   rstep - relative temperature step (dT/T) for estimating derivatives
+  //
+  // Return:
+  //   maximum of relative temperature change dT/T
+  //
+  double do_zeroc_step(d_blpars & temps, const double rstep) const {
 
     // count zero-c blocks
     std::map<std::string, size_t> num; // name -> number
@@ -197,15 +180,14 @@ class Calculator {
     // Fill Q and dQdT arrays
     for (const auto & l : links){
       auto n = l.first;
-      auto b1n = conn[n].first;
-      auto b2n = conn[n].second;
-      auto b1 = blocks[b1n];
-      auto b2 = blocks[b2n];
+      auto c = get_conn(n);
+      auto b1 = get_block(c.first);
+      auto b2 = get_block(c.second);
       if (!b1->is_zero_c() && !b2->is_zero_c()) continue;
 
       // temperatures of both blocks and flow between them:
-      auto T1 = temps[b1n];
-      auto T2 = temps[b2n];
+      auto T1 = get_block_temp(temps, c.first);;
+      auto T2 = get_block_temp(temps, c.second);;
       auto qdot = l.second->get_qdot(T1,T2,B);
 
       // If block1 is zero-c block, add to
@@ -214,11 +196,11 @@ class Calculator {
         auto T1a = T1*(1+rstep);
         auto qdota = l.second->get_qdot(T1a,T2,B);
         auto dqdt1 = (qdota-qdot)/(T1a-T1);
-        auto i = num[b1n];
+        auto i = num[c.first];
         *gsl_vector_ptr(Q, i) -= -qdot;
         *gsl_matrix_ptr(dQdT,i,i) -= dqdt1;
         if (b2->is_zero_c()){
-          auto j = num[b2n];
+          auto j = num[c.second];
           *gsl_matrix_ptr(dQdT,j,i) += dqdt1;
         }
       }
@@ -227,11 +209,11 @@ class Calculator {
         auto T2a = T2*(1+rstep);
         auto qdota = l.second->get_qdot(T1,T2a,B);
         auto dqdt2 = (qdota-qdot)/(T2a-T2);
-        auto i = num[b2n];
+        auto i = num[c.second];
         *gsl_vector_ptr(Q,i) += -qdot;
         *gsl_matrix_ptr(dQdT,i,i) += dqdt2;
         if (b1->is_zero_c()){
-          auto j = num[b1n];
+          auto j = num[c.first];
           *gsl_matrix_ptr(dQdT,j,i) -= dqdt2;
         }
       }
@@ -253,7 +235,7 @@ class Calculator {
       for (const auto & n : num){
         e << n.first << ": ";
         e << "\tQ=" << gsl_vector_get(Q,n.second);
-        e << "\tT=" << temps[n.first];
+        e << "\tT=" << get_block_temp(temps, n.first);
         e << "\tdQ/dT_j=";
         for (int i=0; i<nzblocks; i++) e << " " << gsl_matrix_get(dQdT, n.second, i);
         e << "\n";
@@ -280,16 +262,71 @@ class Calculator {
     return max;
   }
 
-  // Do zero-c calculation
-  void set_zero_c() {
+  /***********************************/
+  // Do zero-c calculation, modify array of temperatures
+  void do_zeroc_calc(d_blpars & temps) const {
     // find and set temperatures of zero-C blocks
     double max = 1e-3;
     for (int i=0; i<100; i++){
-      max = set_zero_c_step(max);
+      max = do_zeroc_step(temps, max);
       if (max < 1e-6) break;
       if (i==99) throw Err() << "Can't find temperatures of zero-C blocks";
     }
   }
+
+  /***********************************/
+  // Calculate a single step t+dt, B+dB
+  // Do not modify class data, return final temperatures
+  void do_step(
+        const double t, const double dt,
+        const double B, const double dB,
+        std::map<std::string, double> & temps) const {
+
+    // find and set temperatures of zero-C blocks
+    do_zeroc_calc(temps);
+
+    // find heat flows to each block
+    std::map<std::string, double> bq;
+    for (const auto & l : links){
+      auto nl = l.first;
+      auto c = get_conn(nl);
+      auto qdot = get_link_flow(temps, nl);
+      auto n1 = c.first;
+      auto n2 = c.second;
+      bq[n1] = ((bq.count(n1) == 0)? 0.0 : bq[n1]) - qdot;
+      bq[n2] = ((bq.count(n2) == 0)? 0.0 : bq[n2]) + qdot;
+    }
+
+    // find temperature change of each block (except zero-c)
+    for (const auto & b : blocks){
+      if (b.second->is_zero_c()) continue;
+      auto n = b.first;
+      auto dQ = bq.count(n)? bq[n] * dt : 0;
+      auto T  = get_block_temp(temps, n);
+      temps[n] += b.second->get_dt(dQ, T, B, Bdot*dt);
+    }
+
+    // repeat calculation of zero-C blocks to have them in the equilibrium after the step
+    do_zeroc_calc(temps);
+  }
+
+
+  /***********************************/
+  // Run a calculation for some time, print results
+  void run(double te, double dt){
+
+    // print table header
+    std::cout << "#" << print_list << "\n";
+
+    // time cycle
+    te+=t;
+    auto dB = Bdot*dt;
+    for (; t<=te; t+=dt, B += dB){
+      do_step(t,dt,B,dB,temps);
+      print_data(temps);
+    }
+  }
+
 
 };
 
