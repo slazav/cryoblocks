@@ -7,6 +7,6 @@ block a 10mK   type=paramagnet material=copper moles=1
 field 7T
 field_rate -0.1T/s
 
-print B T(a)
+print t B T(a)
 run 70s 0.1s
 

@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <string>
 #include <vector>
+#include <list>
 #include <memory>
 #include <map>
 #include <cmath>
@@ -23,7 +24,7 @@ class Calculator {
   std::map<std::string, std::shared_ptr<BlockBase> > blocks; // storage for blocks
   std::map<std::string, std::shared_ptr<LinkBase> >  links;  // links, block thermal connections
 
-  std::map<std::string, double> temps; // block temperatures
+  std::map<std::string, double> temps0; // block temperatures
   std::map<std::string, std::pair<std::string, std::string> > conn; // connections link -> block1,block2
 
   typedef std::vector<std::string>::const_iterator arg_cit;
@@ -37,6 +38,11 @@ class Calculator {
   // current time [s]
   double t=0;
 
+  // Parameters for adaptive steps
+  double max_tempstep = 1e-2; // max relative temperature change on each calculation step
+  double max_tempacc  = 1e-6; // max relative accuracy on each step
+
+  bool print_substeps = false; // print all calculation steps instead of using
 
   public:
   /***********************************/
@@ -82,6 +88,9 @@ class Calculator {
 
   void set_magn_field(const double v) {B = v;}
   void set_magn_field_rate(const double v) {Bdot = v;}
+  void set_print_substeps(const bool v) {print_substeps = v;}
+  void set_max_tempstep(const double v) {max_tempstep = v;}
+  void set_max_tempacc(const double v) {max_tempacc = v;}
 
   /***********************************/
   // Add a block
@@ -91,7 +100,7 @@ class Calculator {
       blocks.erase(name);
       std::cout << "# replacing existing block\n";
     }
-    temps.emplace(name, temp);
+    temps0.emplace(name, temp);
     blocks.emplace(name, create_block(b,e));
   }
 
@@ -117,7 +126,7 @@ class Calculator {
   }
 
   // print heat flows and temperatures according to print_list
-  void print_data(d_blpars & temps) const {
+  void print_data(const double t, const double B, const d_blpars & temps) const {
     size_t n = 0;
     for (const auto v:print_list){
       if (n!=0) std::cout << "\t"; n++;
@@ -276,14 +285,12 @@ class Calculator {
 
   /***********************************/
   // Calculate a single step t+dt, B+dB
-  // Do not modify class data, return final temperatures
+  // Modify temps array to return new values.
+  // Be sure that do_zeroc_calc(temps) was called before.
   void do_step(
         const double t, const double dt,
         const double B, const double dB,
         std::map<std::string, double> & temps) const {
-
-    // find and set temperatures of zero-C blocks
-    do_zeroc_calc(temps);
 
     // find heat flows to each block
     std::map<std::string, double> bq;
@@ -310,6 +317,56 @@ class Calculator {
     do_zeroc_calc(temps);
   }
 
+  // Calculate a step t+dt, B+dB.
+  // Split it into smaller parts if needed to keep accuracy
+  void do_adaptive_step(
+        const double t, const double dt,
+        const double B, const double dB,
+        std::map<std::string, double> & temps) const {
+    std::list<double> brkpts;
+    brkpts.push_back(t);
+    brkpts.push_back(t+dt);
+    auto t1=brkpts.begin();
+    auto t2=t1; t2++;
+
+    do_zeroc_calc(temps);
+
+    while (1) {
+      auto temps1 = temps, temps2=temps;
+      auto dt1 = *t2-*t1;
+      // dt1 step
+      do_step(*t1, dt1, B+(*t1-t)*dB/dt, dt1*dB/dt, temps1);
+
+      // two dt1/2 steps
+      do_step(*t1, dt1/2, B+(*t1-t)*dB/dt, dt1/2*dB/dt, temps2);
+      do_step(*t1+dt1/2, dt1/2, B+(*t1-t+dt1/2)*dB/dt, dt1/2*dB/dt, temps2);
+      // Calculate calculation accuracy:
+      // - relative temperature change in temps1,
+      // - relative temperature difference between temps2 and temps1
+      double m1=0,m2=0;
+      for (auto i0 = temps.begin(), i1 = temps1.begin(), i2=temps2.begin();
+           i0!=temps.end() && i1!=temps1.end() && i2!=temps2.end(); i0++,i1++,i2++){
+        double v1 = fabs((i1->second - i0->second)/i0->second);
+        double v2 = fabs((i1->second - i2->second)/i0->second);
+        if (m1 < v1) m1 = v1;
+        if (m2 < v2) m2 = v2;
+      }
+      // Split calculation interval, throw error if it's too small
+      if (m1>max_tempstep || m2>max_tempacc){
+        t2 = brkpts.insert(t2, *t1+dt1/2);
+        if (*t1 + dt1/4.0 <= *t1) throw Err() << "timestep limit reached: " << dt1/2;
+        continue;
+      }
+      // Finish or move to the next interval
+      else {
+        temps.swap(temps1);
+        t1 = t2; t2++; // move to the next interval
+        if (t2 == brkpts.end()) break;
+        // print intermediate data if needed
+        if (print_substeps) print_data(*t1, B+(*t1-t)*dB/dt, temps);
+      }
+    }
+  }
 
   /***********************************/
   // Run a calculation for some time, print results
@@ -321,9 +378,10 @@ class Calculator {
     // time cycle
     te+=t;
     auto dB = Bdot*dt;
-    for (; t<=te; t+=dt, B += dB){
-      do_step(t,dt,B,dB,temps);
-      print_data(temps);
+    print_data(t, B, temps0);
+    for (; t<te; t+=dt, B+=dB){
+      do_adaptive_step(t,dt,B,dB,temps0);
+      print_data(t+dt, B+dB, temps0);
     }
   }
 
@@ -438,6 +496,30 @@ try{
       if (args.size() != 1)
         throw Err() << "Wrong number of arguments. Expect: field_rate <dB/dt>";
       calc.set_magn_field_rate(read_value(args[0], "T/s"));
+      continue;
+    }
+
+    // Set print_substeps parameter
+    if (cmd == "print_substeps") {
+      if (args.size() != 1)
+        throw Err() << "Wrong number of arguments. Expect: print_substeps 0|1";
+      calc.set_print_substeps(atoi(args[0].c_str()));
+      continue;
+    }
+
+    // Set max_tempstep parameter
+    if (cmd == "max_tempstep") {
+      if (args.size() != 1)
+        throw Err() << "Wrong number of arguments. Expect: max_tempstep <value>";
+      calc.set_max_tempstep(read_value(args[0], ""));
+      continue;
+    }
+
+    // Set max_tempacc parameter
+    if (cmd == "max_tempacc") {
+      if (args.size() != 1)
+        throw Err() << "Wrong number of arguments. Expect: max_tempacc <value>";
+      calc.set_max_tempacc(read_value(args[0], ""));
       continue;
     }
 

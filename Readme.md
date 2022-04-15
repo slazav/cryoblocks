@@ -1,13 +1,13 @@
 ## Cryoblocks -- thermal flow calculator for cryogenic (and any other) systems
 
-The system is defined as a set of `blocks` and `links` with certain properties. Program read a command file
-with the following structure:
+The system is defined as a set of `blocks` and `links` with certain
+properties. Program reads a command file with the following structure:
 
 * Comments start with `#`.
 
 * Empty lines are skipped.
 
-* `block <name> <temperature> [parameters]` -- Define a block with a given name and startig temperature.
+* `block <name> <temperature> [parameters]` -- Define a block with a given name and starting temperature.
 
 * `link  <name> <block1> <block2> [parameters]` -- Define a named link which connects block1 and block2.
 
@@ -21,6 +21,18 @@ with the following structure:
 * `field <value>` -- Set magnetic field.
 
 * `field_rate <value>` -- Set magnetic field rate.
+
+* `print_substeps 0|1` -- Print values for requested time steps or
+for actual calculation steps (they could be smaller to achieve reasonable
+accuracy).
+
+* `max_tempstep <value>` -- Use smaller calculation steps to keep
+relative change of temperatures on each step less than given value.
+(Default: 1e-2).
+
+* `max_tempacc <value>` -- Use smaller calculation steps to keep
+relative temperature accuracy (difference between single dt and double
+dt/2 steps) less than given value. (Default: 1e-6).
 
 * `exit` -- Stop processing file and exit.
 
@@ -39,20 +51,18 @@ function of `dQ`, `T`, `B`, and `dB`.
 A thermal link object can calculate heat transfer depending on
 temperatures of two blocks connected by the link.
 
-Calculation is done using a fixed time step (TODO: it would be good to
-implement adaptive steps). On each step initial tempetures of all blocks
-are known. For each link heat flows are calculated, Total power applied
-to each block is found. Using these values new temperatures of each block
-are found.
-
-If blocks have zero heat capacity they are calculated differently:
-before and after each step a zero of total heat flow on every such block
-is found as a function of temperaures of these blocks.
+Calculation is done using adaptive time steps. On each step initial
+tempetures of all blocks are known. For each link heat flows are
+calculated, Total power applied to each block is found. Using these
+values new temperatures of each block are found. Block with zero heat
+capacity are calculated differently: before and after each step a
+zero of total heat flow on every such block is found as a function of
+temperaures of these blocks.
 
 #### Dimention parameter reading
 
 All parameters usually have some dimensions, it should be specified. For example,
-time in `run` commabs can be written as `1s`, `0.1m`, `1e-2ms`, etc.
+time in `run` command can be written as `1s`, `0.1m`, `1e-2ms`, etc.
 
 #### Blocks
 
