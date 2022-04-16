@@ -47,7 +47,7 @@ class LinkSimple: public LinkBase {
     }
 
     /*****************/
-    double get_qdot(const double T1, const double T2, const double B) const override { return K*(T2-T1);}
+    double get_qdot(const double T1, const double T2, const double B) const override { return K*(T1-T2);}
 };
 
 /********************************************************************/
