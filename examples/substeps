@@ -14,6 +14,7 @@ link l1 a b   type=simple K=1W/K
 print_substeps 1
 max_tempstep 0.1
 
+print_to_file substeps.dat
 print t T(a) T(b)
 
 run 10s 1s

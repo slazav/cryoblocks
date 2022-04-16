@@ -14,5 +14,6 @@ link l3 b2 b3 type=metal_bar R=3mOhm
 link l4 b3 b4 type=metal_bar R=4mOhm
 
 print t T(b1) T(b2) T(b3) T(b4) Q(l1) Q(l2) Q(l3) Q(l4)
+print_to_file zero-c.dat
 
 run 6s 0.1s
