@@ -27,6 +27,8 @@ class Calculator {
   std::map<std::string, double> temps0; // block temperatures
   std::map<std::string, std::pair<std::string, std::string> > conn; // connections link -> block1,block2
 
+  std::map<std::string, std::string> defs; // parameter definitions, name -> value
+
   typedef std::vector<std::string>::const_iterator arg_cit;
   typedef std::map<std::string, double> d_blpars;
 
@@ -91,6 +93,22 @@ class Calculator {
   void set_print_substeps(const bool v) {print_substeps = v;}
   void set_max_tempstep(const double v) {max_tempstep = v;}
   void set_max_tempacc(const double v) {max_tempacc = v;}
+
+  /***********************************/
+  // Define parameters
+  void define(const std::string & name, const std::string & value) {
+    defs.emplace(name, value);
+  }
+  void apply_defs(std::string & str){
+    while (1) {
+      auto n1 = str.find("${");
+      if (n1 == std::string::npos) break;
+      auto n2 = str.find("}", n1);
+      auto v = defs.find(str.substr(n1+2, n2-n1-2));
+      if (v == defs.end()) throw Err() << "Unknown parameter: " << str.substr(n1, n2-n1+1);
+      str.replace(n1,n2-n1+1, v->second);
+    }
+  }
 
   /***********************************/
   // Add a block
@@ -430,6 +448,9 @@ try{
     if (c != std::string::npos)
       line = line.substr(0, c);
 
+    // apply definitions
+    calc.apply_defs(line);
+
     // Split the line into command and arguments:
     std::istringstream in(line);
     std::string cmd;
@@ -521,6 +542,14 @@ try{
       if (args.size() != 1)
         throw Err() << "Wrong number of arguments. Expect: max_tempacc <value>";
       calc.set_max_tempacc(read_value(args[0], ""));
+      continue;
+    }
+
+    // Define a parameter
+    if (cmd == "define") {
+      if (args.size() != 2)
+        throw Err() << "Wrong number of arguments. Expect: define <name> <value>";
+      calc.define(args[0], args[1]);
       continue;
     }
 

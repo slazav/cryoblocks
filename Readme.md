@@ -18,6 +18,9 @@ properties. Program reads a command file with the following structure:
   through a link, `t` for time, `B` for magnetic field. Example: `print t
   H T(block1) T(block2) Q(link1)`.
 
+* `define <name> <value>` -- Define a parameter which can be used later.
+`${<name>}` will be substituted by `<value>`.
+
 * `field <value>` -- Set magnetic field.
 
 * `field_rate <value>` -- Set magnetic field rate.

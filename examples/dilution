@@ -9,31 +9,35 @@
 #       <---  HE1D <- HE2D <- HE3D <-
 
 
+define T0   2mK
+define ndot 50umol/s
+define A0   8m^2
+
 block bath 50mK  type=bath
-block mc    2mK   type=zero-c
-block he1c  2mK   type=zero-c
-block he1d  2mK   type=zero-c
-block he2c  2mK   type=zero-c
-block he2d  2mK   type=zero-c
-block he3c  2mK   type=zero-c
-block he3d  2mK   type=zero-c
+block mc    ${T0}   type=zero-c
+block he1c  ${T0}   type=zero-c
+block he1d  ${T0}   type=zero-c
+block he2c  ${T0}   type=zero-c
+block he2d  ${T0}   type=zero-c
+block he3c  ${T0}   type=zero-c
+block he3d  ${T0}   type=zero-c
 
 
-link l1c bath he1c type=dilution_circ phase=C ndot=50umol/s
-link l2c he1c he2c type=dilution_circ phase=C ndot=50umol/s
-link l3c he2c he3c type=dilution_circ phase=C ndot=50umol/s
-link l4c he3c mc   type=dilution_circ phase=C ndot=50umol/s
+link l1c bath he1c type=dilution_circ phase=C ndot=${ndot}
+link l2c he1c he2c type=dilution_circ phase=C ndot=${ndot}
+link l3c he2c he3c type=dilution_circ phase=C ndot=${ndot}
+link l4c he3c mc   type=dilution_circ phase=C ndot=${ndot}
 
-link cool  mc  bath  type=dilution_cooling ndot=50umol/s
+link cool  mc  bath  type=dilution_cooling ndot=${ndot}
 
-link l1d mc   he3d type=dilution_circ phase=D ndot=50umol/s
-link l2d he3d he2d type=dilution_circ phase=D ndot=50umol/s
-link l3d he2d he1d type=dilution_circ phase=D ndot=50umol/s
-link l4d he1d bath type=dilution_circ phase=D ndot=50umol/s
+link l1d mc   he3d type=dilution_circ phase=D ndot=${ndot}
+link l2d he3d he2d type=dilution_circ phase=D ndot=${ndot}
+link l3d he2d he1d type=dilution_circ phase=D ndot=${ndot}
+link l4d he1d bath type=dilution_circ phase=D ndot=${ndot}
 
-link kr1 he1c he1d type=kap_res_he3 power=2 area=8m^2
-link kr2 he2c he2d type=kap_res_he3 power=2 area=8m^2
-link kr3 he3c he3d type=kap_res_he3 power=2 area=8m^2
+link kr1 he1c he1d type=kap_res_he3 power=2 area=${A0}
+link kr2 he2c he2d type=kap_res_he3 power=2 area=${A0}
+link kr3 he3c he3d type=kap_res_he3 power=2 area=${A0}
 
 print T(bath) T(he1c) T(he2c) T(he3c)  T(mc)  T(he3d) T(he2d) T(he1d)
 
