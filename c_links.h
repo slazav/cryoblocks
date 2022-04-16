@@ -236,29 +236,30 @@ class LinkElPh: public LinkBase {
 class LinkKapRes: public LinkBase {
   double area = 0;
   int power = 1;
+  double C = 0;
 
   public:
 
     /*****************/
     LinkKapRes(const str_cit & b, const str_cit & e) {
-      auto opts = get_key_val_args(b,e, {"type=", "area=", "power="});
+      auto opts = get_key_val_args(b,e, {"type=", "area=", "power=", "C="});
 
       if (opts["area"]  != "") area = read_value(opts["area"], "m^2");
       if (opts["power"] != "") power = read_value(opts["power"], "");
+      switch (power) {
+        case 1: C=900.0; break;
+        case 2: C=41.0; break;
+        case 3: C=0.1; break;
+        default: throw Err() << "unknown power setting for Kapitza resistance: " << power;
+      }
+      if (opts["C"] != "") C = read_value(opts["C"], "");
+      if (C    <= 0) throw Err() << "A positive value expected: C";
       if (area <= 0) throw Err() << "A positive value expected: area";
-      if (power < 1 || power > 3) throw Err() << "Unknown power setting (should be 1, 2, or 3)";
     }
 
     /*****************/
     double get_qdot(const double T1, const double T2, const double B) const override {
-      double RR;
-      switch (power) {
-        case 1: RR=900.0; break;
-        case 2: RR=41.0; break;
-        case 3: RR=0.1; break;
-        default: throw Err() << "unknown power setting for Kapitza resistance: " << power;
-      }
-      return area/((power+1)*RR)  * (pow(T1,power+1)-pow(T2,power+1));
+      return area/((power+1)*C) * (pow(T1,power+1)-pow(T2,power+1));
     }
 };
 
