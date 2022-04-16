@@ -34,6 +34,9 @@ class Calculator {
 
   std::vector<std::string> print_list; // list of parameters to print
 
+  std::ostream * out = &std::cout; // pointer to output stream
+  std::shared_ptr<std::ostream> out_f; // storage for std::ofstream
+
   // magnetic field and its sweeping rate [T, T/s]
   double B=0, Bdot=0;
 
@@ -94,6 +97,17 @@ class Calculator {
   void set_max_tempstep(const double v) {max_tempstep = v;}
   void set_max_tempacc(const double v) {max_tempacc = v;}
 
+  void set_print_to_file(const std::string & name){
+    if (name == "-") {
+      out_f.reset();
+      out = & std::cout;
+    } else {
+      out_f = std::shared_ptr<std::ostream>(new std::ofstream(name));
+      out = out_f.get();
+    }
+    if (!*out) throw Err() << "Can't open file: " << name;
+  }
+
   /***********************************/
   // Define parameters
   void define(const std::string & name, const std::string & value) {
@@ -111,30 +125,34 @@ class Calculator {
   }
 
   /***********************************/
-  // Add a block
-  void add_block(const std::string & name, const double temp,
+  // Add a block, return 1 if block was replaced
+  int add_block(const std::string & name, const double temp,
                  const arg_cit & b, const arg_cit & e){
+    int ret = 0;
     if (blocks.count(name)>0){
       blocks.erase(name);
-      std::cout << "# replacing existing block\n";
+      ret = 1;
     }
     temps0.emplace(name, temp);
     blocks.emplace(name, create_block(b,e));
+    return ret;
   }
 
   /***********************************/
-  // Add a link
-  void add_link(const std::string & name,
+  // Add a link, return 1 if link was replaced
+  bool add_link(const std::string & name,
                 const std::string & bl1, const std::string & bl2,
                 const arg_cit & b, const arg_cit & e){
+    int ret = 0;
     if (blocks.count(bl1) == 0) throw Err() << "no such block: " << bl1;
     if (blocks.count(bl2) == 0) throw Err() << "no such block: " << bl2;
     if (links.count(name)>0){
       links.erase(name);
-      std::cout << "# replacing existing link\n";
+      ret = 1;
     }
     links.emplace(name, create_link(b,e));
     conn.emplace(name, std::make_pair(bl1, bl2));
+    return ret;
   }
 
   /***********************************/
@@ -147,14 +165,14 @@ class Calculator {
   void print_data(const double t, const double B, const d_blpars & temps) const {
     size_t n = 0;
     for (const auto v:print_list){
-      if (n!=0) std::cout << "\t"; n++;
+      if (n!=0) *out << "\t"; n++;
 
       // Temperature of a block: T(<name>)
       if (v.size()>3 && v[0]=='T' && v[1]=='(' && v[v.size()-1]==')'){
         auto n = v.substr(2,v.size()-3);
         // extra check to have more understandable error message:
         if (blocks.count(n)==0) throw Err() << "Unknown block name for data output: " << n;
-        std::cout << get_block_temp(temps, n); 
+        *out << get_block_temp(temps, n); 
         continue;
       }
 
@@ -163,18 +181,18 @@ class Calculator {
         auto n = v.substr(2,v.size()-3);
         // extra check to have more understandable error message:
         if (links.count(n)==0) throw Err() << "Unknown link name for data output: " << n;
-        std::cout << get_link_flow(temps, n);
+        *out << get_link_flow(temps, n);
         continue;
       }
 
       // Magnetic field
-      if (v == "B"){ std::cout << B; continue; }
+      if (v == "B"){ *out << B; continue; }
 
       // Time
-      if (v == "t"){ std::cout << t; continue;
+      if (v == "t"){ *out << t; continue;
       }
     }
-    if (print_list.size()>0) std::cout << "\n";
+    if (print_list.size()>0) *out << "\n";
   }
 
   /***********************************/
@@ -391,7 +409,7 @@ class Calculator {
   void run(double te, double dt){
 
     // print table header
-    std::cout << "#" << print_list << "\n";
+    *out << "#" << print_list << "\n";
 
     // time cycle
     te+=t;
@@ -418,6 +436,8 @@ try{
   Calculator calc;
   gsl_set_error_handler (&my_gsl_handler);
 
+  bool print_cmd = 1;                  // show commands on output
+
   // program should be run with one argument - name of command file
   if (argc!=2){
     std::cerr << "Usage: " << argv[0] << " <command file>\n";
@@ -439,7 +459,7 @@ try{
     // Read one line, detect EOF
     std::string line;
     if (!getline(in_c, line)){
-      std::cout << "# end of command file\n";
+      if (print_cmd) std::cerr << "# end of command file\n";
       break;
     }
 
@@ -466,8 +486,8 @@ try{
     }
     int narg = args.size();
 
-    // logging to cout
-    std::cout << "# " << line << "\n";
+    // logging command
+    if (print_cmd) std::cerr << "# " << line << "\n";
 
     /*****************************************/
     // Process commands
@@ -479,7 +499,8 @@ try{
     if (cmd == "block") {
       if (args.size() < 2)
         throw Err() << "Not enough arguments, expect: block <name> <temp> [options]";
-      calc.add_block(args[0], read_value(args[1], "K"), args.begin()+2, args.end());
+      auto ret = calc.add_block(args[0], read_value(args[1], "K"), args.begin()+2, args.end());
+      if (ret && print_cmd) std::cerr << "# replacing existing block: " << args[0] << "\n";
       continue;
     }
 
@@ -487,7 +508,8 @@ try{
     if (cmd == "link") {
       if (args.size() < 3)
         throw Err() << "Not enough arguments, expect: link <name> <block1> <block2> [options]";
-      calc.add_link(args[0], args[1], args[2], args.begin()+3, args.end());
+      auto ret = calc.add_link(args[0], args[1], args[2], args.begin()+3, args.end());
+      if (ret && print_cmd) std::cerr << "# replacing existing link: " << args[0] << "\n";
       continue;
     }
 
@@ -550,6 +572,14 @@ try{
       if (args.size() != 2)
         throw Err() << "Wrong number of arguments. Expect: define <name> <value>";
       calc.define(args[0], args[1]);
+      continue;
+    }
+
+    // Set output file
+    if (cmd == "print_to_file") {
+      if (args.size() != 1)
+        throw Err() << "Wrong number of arguments. Expect: print_to_file <name>";
+      calc.set_print_to_file(args[0]);
       continue;
     }
 

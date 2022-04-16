@@ -25,6 +25,9 @@ properties. Program reads a command file with the following structure:
 
 * `field_rate <value>` -- Set magnetic field rate.
 
+* `print_to_file <name>` -- Set filename for printing data. If name is `-` then
+use `stdout` (default).
+
 * `print_substeps 0|1` -- Print values for requested time steps or
 for actual calculation steps (they could be smaller to achieve reasonable
 accuracy).
