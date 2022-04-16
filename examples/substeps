@@ -1,0 +1,19 @@
+#!../cryoblocks
+
+# Two blocks with 1J/K heat capacity, with 1K temperature difference:
+block a 2K  type=simple C=1J/K
+block b 3K  type=simple C=1J/K
+
+# Link with 1W/K thermal conductivity:
+link l1 a b   type=simple K=1W/K
+
+# Thermalization time should be about 1s.
+# We calculate temperatures on 1s grid, but request values from
+# all sub-steps
+
+print_substeps 1
+max_tempstep 0.1
+
+print t T(a) T(b)
+
+run 10s 1s
