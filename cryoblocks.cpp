@@ -378,6 +378,7 @@ class Calculator {
     // time cycle
     te+=t;
     auto dB = Bdot*dt;
+    do_zeroc_calc(temps0);
     print_data(t, B, temps0);
     for (; t<te; t+=dt, B+=dB){
       do_adaptive_step(t,dt,B,dB,temps0);
