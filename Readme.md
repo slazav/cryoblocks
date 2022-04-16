@@ -48,9 +48,9 @@ Consider a block with temperature `T` with external heating power `dQ`.
 Entropy of the block `S` depends on temperature and maybe other
 parameters (magnetic field `B`).
 
-Then `dQ = T dS = C dT + D dB`, where `C =  T \partial S / \partial T)` is
+Then `dQ = T dS = C dT + D dB`, where `C =  T \partial S / \partial T` is
 heat capacity, and `D = T \partial S / \partial B` - cooling power of
-demagnetization refrigerator (or how to call it better?). Using this
+demagnetization process. Using this
 formula each block object can calculate change of temperature `dT` as a
 function of `dQ`, `T`, `B`, and `dB`.
 
@@ -60,12 +60,12 @@ temperatures of two blocks connected by the link.
 Calculation is done using adaptive time steps. On each step initial
 tempetures of all blocks are known. For each link heat flows are
 calculated, Total power applied to each block is found. Using these
-values new temperatures of each block are found. Block with zero heat
+values new temperatures of each block are found. Blocks with zero heat
 capacity are calculated differently: before and after each step a
 zero of total heat flow on every such block is found as a function of
-temperaures of these blocks.
+temperatures of these blocks.
 
-#### Dimention parameter reading
+#### Parameter reading
 
 All parameters usually have some dimensions, it should be specified. For example,
 time in `run` command can be written as `1s`, `0.1m`, `1e-2ms`, etc.
@@ -140,15 +140,15 @@ Parameters:
   * `moles=<v>` -- number of moles
   * `mass=<v>` -- if material is set then mass can be used instead of moles
 
-* `link <name> <block1> <block2> type=kap_res_he3 area=<S> power=<N>` --
-Kapitza resistance between He3 and solids. `R = 900/T/S [W]` for temperature `T` and area `S`.
-Power should be 1, 2, or 3.
-
+* `link <name> <block1> <block2> type=kap_res_he3 area=<S> power=<N> C=<v>` --
+Kapitza resistance between He3 and solids. `R = 900/T/S [W]`, or `R=41.0/T^2/S`,
+or `R = 0.1/T^3/S` for temperature `T` and area `S`. Power should be 1, 2, or 3.
+Parameter `C` is used to override numerical factor.
 
 * `link <name> <block1> <block2> type=dilution_cooling ndot=<V>`
 Cooling power of a dilution refrigerator.  block1 should be mixing
 chamber, block2 - thermal bath at any temperature.
 
 * `link <name> <block1> <block2> type=dilution_circ ndot=<V> phase=<C|D>`
-Heat transfer by circulation in a dilution refrigerator. Phase parameter is "C" or "D".
-T2 is not used in the calculation.
+Heat transfer by circulation in a dilution refrigerator. Phase parameter
+is "C" or "D". T2 is not used in the calculation.
