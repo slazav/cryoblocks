@@ -445,8 +445,13 @@ try{
   }
 
   // open command file
-  std::ifstream in_c(argv[1]);
-  if (!in_c.good()) throw Err() << "Can't open command file: " << argv[1];
+  std::istream * inf = &std::cin;
+  std::shared_ptr<std::ifstream> inff;
+  if (strcmp(argv[1],"-")!=0) {
+    inff.reset(new std::ifstream(argv[1]));
+    inf = inff.get();
+  }
+  if (!*inf) throw Err() << "Can't open command file: " << argv[1];
 
   // find prefix (command file name without extension)
   //const char * pos1 = rindex(argv[1], '/');
@@ -458,7 +463,8 @@ try{
   while (1){
     // Read one line, detect EOF
     std::string line;
-    if (!getline(in_c, line)){
+    getline(*inf, line);
+    if (!*inf){
       if (print_cmd) std::cerr << "# end of command file\n";
       break;
     }
