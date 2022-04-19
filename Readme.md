@@ -1,5 +1,72 @@
 ## Cryoblocks -- thermal flow calculator for cryogenic (and any other) systems
 
+#### Basic example:
+
+```
+#!../cryoblocks
+
+# Define initial temperature of our system:
+define T0 20mK
+
+# Describe copper block with mass 100g
+# in a contact with 1 mole of liquid He3 at 0 bar:
+block  Cu ${T0} type=paramagnet material=copper mass=100g
+block  He ${T0} type=liquid_he3 volume=36cm^3 P=0bar
+
+# They are linked by Kapitza thernal resistance which
+# is proportional to contact surface area. Let's use
+# area 1m^2 (it's not that big for sintered-powder heat exchangers)
+link   k1 Cu He type=kap_res_he3 area=1m^2
+
+# We will cool the system by mixing chamber (MC) of a simple dilution
+# fridge with cooling power proportional to T^2, circulation 50 umol/s
+# and external heat leak 0.2uW.
+
+block  MC ${T0} type=simple C=0.2J/K # use some reasonable heat capacity
+block  bath 300K type=bath   # this is needed as a sink for heat leaks
+link MC_cooling MC bath type=dilution_cooling ndot=50umol/s
+link MC_heatleak bath MC type=const Qdot=0.2uW
+
+# The copper block is connected to the mixing chamber with a heat switch
+# with electrical resistance 10 uOhm:
+link precool MC Cu type=metal_bar R=10uOhm
+
+# Magnetic field is 8T
+field 8T
+
+# We will be calculating with some large steps (30min). To keep the accuracy
+# intermediate steps will be always done by the program. We can show/hide them
+# by setting print_substeps to 1/0
+print_substeps 0
+
+# Now define what do we want to print: time, magnetic field,
+# temperatures of a few blocks and heat flow through a link
+print t B T(MC) T(Cu) T(He) Q(precool)
+
+# Where we print result (use '-' for stdout):
+print_to_file doc_example.dat
+
+# Precool for 72h.
+run 72h 30m
+
+####
+# Now we precooled to about 9mK. Let's disconnect HS and
+# demagnetize to 0.4T (20 times) during 10h:
+
+link precool MC Cu type=metal_bar R=1MOhm
+field_rate -0.76T/h
+run 10h 30m
+
+# And now just wait
+field_rate 0T/h
+run 18h 30m
+
+```
+
+![Result](https://github.com/slazav/cryoblocks/blob/main/examples/doc_example.png)
+
+#### Command file
+
 The system is defined as a set of `blocks` and `links` with certain
 properties. Program reads a command file with the following structure:
 
