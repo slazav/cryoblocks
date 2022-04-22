@@ -687,6 +687,7 @@ try{
 
     // Wait for some time
     if (cmd == "run") {
+      if (args.size()==1) args.push_back(args[0]);
       if (args.size() != 2)
         throw Err() << "Wrong number of arguments. Expect: run <time> <time step>";
       calc.run(read_value(args[0], "s"), read_value(args[1], "s"));
