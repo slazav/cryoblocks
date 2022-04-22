@@ -157,6 +157,20 @@ class Calculator {
   }
 
   /***********************************/
+  // Delete a block
+  void del_block(const std::string & name) {
+    if (blocks.count(name) == 0) throw Err() << "no such block: " << name;
+    blocks.erase(name);
+  }
+
+  /***********************************/
+  // Delete a link
+  void del_link(const std::string & name) {
+    if (links.count(name) == 0) throw Err() << "no such link: " << name;
+    links.erase(name);
+  }
+
+  /***********************************/
   // Set list of output values
   void set_print_list(const std::vector<std::string> list){
     print_list = list;
@@ -563,6 +577,16 @@ try{
         throw Err() << "Not enough arguments, expect: link <name> <block1> <block2> [options]";
       auto ret = calc.add_link(args[0], args[1], args[2], args.begin()+3, args.end());
       if (ret && print_cmd) std::cerr << "# replacing existing link: " << args[0] << "\n";
+      continue;
+    }
+
+    // Delete block or link
+    if (cmd == "delete") {
+      if (args.size() != 2)
+        throw Err() << "Not enough arguments, expect: delete (block|link) <name>";
+      if (args[0]=="block") calc.del_block(args[1]);
+      else if (args[0]=="link")  calc.del_link(args[1]);
+      else throw Err() << "Bad argument, expect: delete (block|link) <name>";
       continue;
     }
 

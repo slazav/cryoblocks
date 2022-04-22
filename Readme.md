@@ -78,6 +78,8 @@ properties. Program reads a command file with the following structure:
 
 * `link  <name> <block1> <block2> [parameters]` -- Define a named link which connects block1 and block2.
 
+* `delete (block|link) <name>` -- Delete block or link.
+
 * `run  <time> <time step>` -- Do calculations for a given time, print table with temperatures and heat flows.
 
 * `print <par1> ...` -- Set list of parameters for output during `run` command.
