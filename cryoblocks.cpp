@@ -103,6 +103,9 @@ class Calculator {
   void set_max_tempacc(const double v) {max_tempacc = v;}
   void set_tshift(const double v) {tshift = v;}
 
+  double get_tshift() const {return tshift;}
+  double get_t() const {return t;}
+
   void set_print_to_file(const std::string & name){
     if (name == "-") {
       out_f.reset();
@@ -517,7 +520,7 @@ class Calculator {
   /***********************************/
   // Run a calculation for some time, print results
   void run(double te, double dt){
-
+    std::cerr << "# start time: " << tshift+t << ", period: " << te << ", step: " << dt << "\n";
     // print table header
     *out << "#" << print_list << "\n";
 
@@ -687,10 +690,19 @@ try{
 
     // Wait for some time
     if (cmd == "run") {
+      if (args.size() < 1 || args.size() > 2)
+        throw Err() << "Wrong number of arguments. Expect: run <time> [<time step>]";
       if (args.size()==1) args.push_back(args[0]);
-      if (args.size() != 2)
-        throw Err() << "Wrong number of arguments. Expect: run <time> <time step>";
       calc.run(read_value(args[0], "s"), read_value(args[1], "s"));
+      continue;
+    }
+
+    // Wait until time
+    if (cmd == "run_to") {
+      if (args.size() < 1 || args.size() > 2)
+        throw Err() << "Wrong number of arguments. Expect: run <final time> <time step>";
+      auto dt = read_value(args[0], "s") - calc.get_tshift() - calc.get_t();
+      calc.run(dt, args.size()>1 ? read_value(args[1], "s"):dt);
       continue;
     }
 
