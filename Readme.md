@@ -80,9 +80,14 @@ properties. Program reads a command file with the following structure:
 
 * `delete (block|link) <name>` -- Delete block or link.
 
-* `run  <time> [<time step>]` -- Do calculations for a given time, print
+* `run  <time period> [<time step>]` -- Do calculations for a given time, print
 table with temperatures and heat flows. If `<time step>` is missing then
 a single step is used.
+
+* `run_to  <final time> [<time step>]` -- Same as run, but do calculation
+until `<final time>` (with time shift taken into account).
+
+* `time_shift <value>` -- When printing result add the value to time.
 
 * `read_data <file name> <par1> ...` -- Read time grid and additional parameters and
 do calculation. Parameters determin data columns: `T(<name>)` for a block
@@ -100,7 +105,6 @@ read_factors 3600 1e-3
 read_data file.dat - T(MC)
 ```
 
-* `time_shift <value>` -- When printint result add the value to time.
 
 * `print <par1> ...` -- Set list of parameters for output during `run` command.
   Use `T(<name>)` for a block temperature, `Q(name)` for heat flow
