@@ -233,12 +233,16 @@ class LinkElPh: public LinkBase {
 // power=2:  R = 41/T^2/area -- Dilution fridge heat exchanger with fine silver powder, see Y.Takano-1994
 // power=3:  R = 0.1/T^3/area -- Dilution fridge heat exchanger with coarse silver powder, see Y.Takano-1994
 
+// Q = dT / R = area * T^n*dT / C ~= area (T1^(n+1)-T2^(n+1))/(n+1) /900
+
 class LinkKapRes: public LinkBase {
   double area = 0;
   int power = 1;
   double C = 0;
 
   public:
+
+
 
     /*****************/
     LinkKapRes(const str_cit & b, const str_cit & e) {
