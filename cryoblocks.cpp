@@ -9,6 +9,7 @@
 #include <memory>
 #include <map>
 #include <cmath>
+#include <limits>
 #include <cstring>
 
 #include "inc/err.h"
@@ -35,6 +36,8 @@ class Calculator {
 
   std::vector<std::string> print_list; // list of parameters to print
 
+  std::vector<double> read_factors;
+
   std::ostream * out = &std::cout; // pointer to output stream
   std::shared_ptr<std::ostream> out_f; // storage for std::ofstream
 
@@ -42,7 +45,8 @@ class Calculator {
   double B=0, Bdot=0;
 
   // current time [s]
-  double t=0;
+  double t = 0;
+  double tshift = 0;
 
   // Parameters for adaptive steps
   double max_tempstep = 1e-2; // max relative temperature change on each calculation step
@@ -97,6 +101,7 @@ class Calculator {
   void set_print_substeps(const bool v) {print_substeps = v;}
   void set_max_tempstep(const double v) {max_tempstep = v;}
   void set_max_tempacc(const double v) {max_tempacc = v;}
+  void set_tshift(const double v) {tshift = v;}
 
   void set_print_to_file(const std::string & name){
     if (name == "-") {
@@ -204,10 +209,100 @@ class Calculator {
       if (v == "B"){ *out << B; continue; }
 
       // Time
-      if (v == "t"){ *out << t; continue;
+      if (v == "t"){
+        if (t+tshift > 315532800) *out << std::fixed; // > 1980-01-01
+        *out << (t+tshift);
+        *out << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+        continue;
       }
+
+      throw Err() << "Unknown word in the print list: " << v;
     }
     if (print_list.size()>0) *out << "\n";
+  }
+
+  // set factors for reading data
+  void set_read_factors(const arg_cit & b, const arg_cit & e) {
+    read_factors.clear();
+    for (auto p = b; p!=e; p++){
+      std::istringstream ss(*p);
+      double v;
+      ss >> v;
+      if (!ss) break;
+      read_factors.push_back(v);
+    }
+  }
+
+  // read time grid and other parameters, do calculations:
+  void read_data(std::istream & stream, const arg_cit & b, const arg_cit & e) {
+    double tp,tn;
+    double Bp = B;
+    bool first = true;
+    while (1){
+      // Read one line, detect EOF
+      std::string data_line;
+      getline(stream, data_line);
+      if (!stream || data_line == "EOF") break;
+
+      std::istringstream ss(data_line);
+      int fn = 0;
+      ss >> tn; // read time
+      if (!ss) throw Err() << "can't read time: " << data_line;
+      if (read_factors.size()>fn) tn*=read_factors[fn];
+      if (first) {
+        tshift = tn;
+        tp = tn = t = 0; // first step has zero size
+        Bp = B;
+      }
+      else {
+        tn -= tshift;
+      }
+
+      // read and set other parameters
+      for (auto p = b; p!=e; p++){
+
+        if (*p == "-"){
+          std::string s;
+          ss >> s;
+          continue;
+        }
+
+        double v;
+        ss >> v;
+        fn++;
+        if (read_factors.size()>fn) v*=read_factors[fn];
+        if (!ss) throw Err() << "can't read parameter " << *p << ": " << data_line;
+
+        // Temperature of a block: T(<name>)
+        if (p->size()>3 && (*p)[0]=='T' && (*p)[1]=='(' && (*p)[p->size()-1]==')'){
+          auto n = p->substr(2,p->size()-3);
+          // extra check to have more understandable error message:
+          if (blocks.count(n)==0) throw Err() << "Unknown block name for data input: " << n;
+          temps0[n] = v;
+          continue;
+        }
+
+        // // Heat flow through a link: Q(<name>)
+        // if (p->size()>3 && (*p)[0]=='Q' && (*p)[1]=='(' && (*p)[p->size()-1]==')'){
+        //   auto n = p->substr(2,p->size()-3);
+        //   // extra check to have more understandable error message:
+        //   if (links.count(n)==0) throw Err() << "Unknown link name for data input: " << n;
+        //   // TODO
+        //   continue;
+        // }
+
+        // Magnetic field
+        if (*p == "B"){
+          Bp = B;
+          B = v;
+          if (tn!=tp) Bdot = (B-Bp)/(tn-tp);
+          continue;
+        }
+        throw Err() << "Unknown word in the read list: " << *p;
+      }
+      run(tn-tp, tn-tp);
+      tp = tn; first=false;
+    }
   }
 
   /***********************************/
@@ -595,6 +690,31 @@ try{
       if (args.size() != 2)
         throw Err() << "Wrong number of arguments. Expect: run <time> <time step>";
       calc.run(read_value(args[0], "s"), read_value(args[1], "s"));
+      continue;
+    }
+
+    // Read time grid and other parameters until end of file or "EOF" line),
+    // run calculations.
+    if (cmd == "read") {
+      if (args.size() < 1)
+        throw Err() << "Wrong number of arguments. Expect: read_data <fname> <par1> ...";
+      if (args[0]!="-") open_cmd_file(args[0]);
+      calc.read_data(*cmd_stream, args.begin()+1, args.end());
+      if (args[0]!="-") close_cmd_file();
+      continue;
+    }
+
+    // Set factors for data reading
+    if (cmd == "read_factors") {
+      calc.set_read_factors(args.begin(), args.end());
+      continue;
+    }
+
+    // Set factors for data reading
+    if (cmd == "time_shift") {
+      if (args.size() != 1)
+        throw Err() << "Wrong number of arguments. Expect: time_shift <time shift>";
+      calc.set_tshift(read_value(args[0], "s"));
       continue;
     }
 

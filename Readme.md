@@ -82,6 +82,24 @@ properties. Program reads a command file with the following structure:
 
 * `run  <time> <time step>` -- Do calculations for a given time, print table with temperatures and heat flows.
 
+* `read_data <file name> <par1> ...` -- Read time grid and additional parameters and
+do calculation. Parameters determin data columns: `T(<name>)` for a block
+temperature, `B` for magnetic field, `-` for skipping a column (numeric
+or non-numeric).  If `<file name>` is `-` then data is read from the current
+command file. Reading stops on `EOF` line or end of file.
+
+* `read_factors <time factor> <par1 factor> ...` -- Set factors to
+multiply values in `read_data` command. First value is factor for the time column.
+Columns defined as `-` should be skipped here.
+Example: to read time in hours and temperature of block `MC` in mK from 1st and 3rd
+columns of a file use commands:
+```
+read_factors 3600 1e-3
+read_data file.dat - T(MC)
+```
+
+* `time_shift <value>` -- When printint result add the value to time.
+
 * `print <par1> ...` -- Set list of parameters for output during `run` command.
   Use `T(<name>)` for a block temperature, `Q(name)` for heat flow
   through a link, `t` for time, `B` for magnetic field. Example: `print t
