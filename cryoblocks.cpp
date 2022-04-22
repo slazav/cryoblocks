@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <algorithm>
 #include <memory>
 #include <map>
 #include <cmath>
@@ -425,6 +426,51 @@ class Calculator {
 
 };
 
+
+/********************************************************************/
+// stream for command file
+std::istream * cmd_stream = &std::cin;
+std::list<std::shared_ptr<std::ifstream> > cmd_storage;
+std::list<std::string> cmd_names;
+
+// open one more command file
+void open_cmd_file(const std::string & name){
+
+  // check for recursion
+  if (std::find(cmd_names.begin(), cmd_names.end(), name) != cmd_names.end())
+    throw Err() << "Can't read command file because it's already open: " << name;
+
+  cmd_names.push_back(name);
+
+  if (strcmp(name.c_str(),"-")!=0) {
+    cmd_storage.emplace_back(new std::ifstream(name));
+    cmd_stream = cmd_storage.back().get();
+  }
+  else {
+    cmd_storage.push_back(NULL);
+    cmd_stream = &std::cin;
+  }
+  if (!*cmd_stream) throw Err() << "Can't open command file: " << name;
+}
+
+// close current file, return true if all files are closed
+bool close_cmd_file(){
+  if (cmd_storage.size()<1 || cmd_names.size()<0)
+    throw Err() << "Can't close command file: stroage is empty";
+  cmd_storage.pop_back();
+  cmd_names.pop_back();
+  if (cmd_storage.size()<1) return true;
+  cmd_stream = cmd_storage.back().get();
+  return false;
+}
+
+std::string & get_cmd_name(){
+  if (cmd_names.size()<0)
+    throw Err() << "Can't get cmd file name: no files are open";
+  return cmd_names.back();
+}
+
+
 /********************************************************************/
 // Main program block: read commands from a file and send them
 // to the Calculator class
@@ -444,14 +490,7 @@ try{
     return 1;
   }
 
-  // open command file
-  std::istream * inf = &std::cin;
-  std::shared_ptr<std::ifstream> inff;
-  if (strcmp(argv[1],"-")!=0) {
-    inff.reset(new std::ifstream(argv[1]));
-    inf = inff.get();
-  }
-  if (!*inf) throw Err() << "Can't open command file: " << argv[1];
+  open_cmd_file(argv[1]);
 
   // find prefix (command file name without extension)
   //const char * pos1 = rindex(argv[1], '/');
@@ -463,10 +502,10 @@ try{
   while (1){
     // Read one line, detect EOF
     std::string line;
-    getline(*inf, line);
-    if (!*inf){
-      if (print_cmd) std::cerr << "# end of command file\n";
-      break;
+    getline(*cmd_stream, line);
+    if (!*cmd_stream){
+      if (print_cmd) std::cerr << "# end of command file: " << get_cmd_name() << "\n";
+      if (close_cmd_file()) break;
     }
 
     // Remove comments:
@@ -500,6 +539,14 @@ try{
 
     // Exit
     if (cmd == "exit") { break; }
+
+    // Include a file
+    if (cmd == "include") {
+      if (args.size() < 1)
+        throw Err() << "Not enough arguments, expect: include <file name>";
+      open_cmd_file(args[0]);
+      continue;
+    }
 
     // Define a block
     if (cmd == "block") {

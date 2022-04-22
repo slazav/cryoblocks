@@ -109,6 +109,8 @@ dt/2 steps) less than given value. (Default: 1e-6).
 
 * `exit` -- Stop processing file and exit.
 
+* `include <file name>` -- Read commands from a file.
+
 #### Physics
 
 Consider a block with temperature `T` with external heating power `dQ`.
