@@ -118,6 +118,26 @@ class LinkMetalBar: public LinkBase {
 
 
 /********************************************************************/
+// Field-dependent heat leak with terms proportional to B, B^2
+class LinkFieldHL: public LinkBase {
+    double xB  = 0;
+    double xB2 = 0;
+  public:
+
+    /*****************/
+    LinkFieldHL(const str_cit & b, const str_cit & e) {
+      auto opts = get_key_val_args(b,e, {"type=", "B=", "B2="});
+      if (opts["B"]!="")  xB  = read_value(opts["B"],  "W/T");
+      if (opts["B2"]!="") xB2 = read_value(opts["B2"], "W/T^2");
+    }
+
+    /*****************/
+    double get_qdot(const double T1, const double T2, const double B) const override {
+      return B*xB + B*B*xB2;}
+};
+
+
+/********************************************************************/
 // Spin-lattice relaxation, Korringa law.
 // block1 should be spin system, block2 - electrons
 class LinkKorringa: public LinkBase {
@@ -324,6 +344,7 @@ std::shared_ptr<LinkBase> create_link(
   if (type=="simple")      return std::shared_ptr<LinkBase>(new LinkSimple(b,e));
   if (type=="simple_bar")  return std::shared_ptr<LinkBase>(new LinkSimpleBar(b,e));
   if (type=="metal_bar")   return std::shared_ptr<LinkBase>(new LinkMetalBar(b,e));
+  if (type=="field_heat_leak")   return std::shared_ptr<LinkBase>(new LinkFieldHL(b,e));
   if (type=="korringa")    return std::shared_ptr<LinkBase>(new LinkKorringa(b,e));
   if (type=="el_ph")       return std::shared_ptr<LinkBase>(new LinkElPh(b,e));
   if (type=="kap_res_he3") return std::shared_ptr<LinkBase>(new LinkKapRes(b,e));
