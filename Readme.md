@@ -174,7 +174,11 @@ constant temperature.
 
 * `block <name> <temperature> type=zero-c` -- A block with zero heat capacity.
 
-* `block <name> <temperature> type=simple C=<value>` -- A block with constant heat capacity.
+* `block <name> <temperature> type=simple C=<value> power=<p> factor=<f>` --
+One can use `C` parameter to specify constant heat capacity in units
+which can be converted to `J/K`. Alternatively one can give `power` and
+`factor` dimensionless values, to have `C=<factor>*T^<power> [J/K]`. Zero
+heat capacity is allowed.
 
 * `block <name> <temperature> type=paramagnet [parameters]` -- paramagnetic material
 (e.g. copper nuclei). Parameters:
@@ -185,11 +189,13 @@ constant temperature.
   * `moles=<v>` -- Number of moles.
   * `mass=<v>` -- If material is set then mass can be used instead of moles.
 
-* `block <name> <temperature> type=liquid_he3 [parameters]` -- liquid He3. Parameters:
+* `block <name> <temperature> type=liquid_he3 [parameters]` -- liquid He3 (uses he3lib).
+Parameters:
   * `P=<v>` -- Pressure
   * `moles=<v>` -- Number of moles
   * `mass=<v>` -- Can be used instead of moles.
   * `volume=<v>` -- Can be used instead of moles (pressure-dependent molar volume is used).
+
 
 #### Links
 
@@ -198,8 +204,11 @@ Following types of links are supported:
 * `link <name> <block1> <block2> type=const` -- A constant heat transfer. Not a physical process,
 but good for tests.
 
-* `link <name> <block1> <block2> type=simple K=<v>` -- Heat transfer proportional to temperature,
-`Qdot = K*(T1-T2)`.
+* `link <name> <block1> <block2> type=simple K=<v> power=<p> factor=<f>` --
+One can use `K` parameter to specify constant heat conductivity in units
+which can be converted to `W/K`. Alternatively one can give `power` and
+`factor` dimensionless values, to have `K=<factor>*T^<power> [W/K]`.
+Heat transfer is calculated as `Qdot = <factor>*(T1^P - T2^P)/P`, where `P=<power>+1`.
 
 * `link <name> <block1> <block2> type=metal_bar R=<v>` -- A bar made of metal.
 Total resistance R, Wiedemann-Franz low is used to calculate heat conductivity.

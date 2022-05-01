@@ -25,22 +25,26 @@ class BlockBase {
 };
 
 /********************************************************************/
-// Simple block with a constant heat capacity. Can have zero heat capacity.
+// Simple block with a constant or power function heat capacity.
+// Can have zero heat capacity.
 class BlockSimple: public BlockBase {
-    double C=0;
+    double factor=0;
+    double power=0;
 
   public:
 
     BlockSimple(const str_cit & b, const str_cit & e){
-      auto opts = get_key_val_args(b,e, {"type=", "C="});
-      if (opts["C"] != "") C = read_value(opts["C"], "J/K");
+      auto opts = get_key_val_args(b,e, {"type=", "C=", "factor=", "power="});
+      if (opts["C"]     != "") {factor = read_value(opts["C"], "J/K"); power=0;}
+      if (opts["factor"] != "") factor = read_value(opts["factor"], "");
+      if (opts["power"]  != "") power = read_value(opts["power"],  "");
     }
 
     double get_dt(const double dQ, const double T, const double B, const double dB) const override {
-       return dQ/C; }
+       return dQ/(factor*pow(T,power)); }
 
     // simple block can have zero heat capacity
-    bool is_zero_c() const override {return C==0;}
+    bool is_zero_c() const override {return factor==0;}
 };
 
 /********************************************************************/
@@ -163,7 +167,11 @@ class BlockLHe3: public BlockBase {
     // no support for A-phase!
     double get_dt(const double dQ, const double T, const double B, const double dB) const override{
       double p(P), t(T), ttc(T/Tc);
-      if (T > Tc) return dQ/(he3_c_n_(&t,&p)*R*moles);
+      // if (T > Tc) return dQ/(he3_c_n_(&t,&p)*R*moles);
+      if (T > Tc){
+         double Vm = he3_vm_(&p);
+         return dQ/(he3_cv_n_(&t,&Vm)*R*moles);
+      }
       else {
         double ttc = T/Tc;
         return dQ/(he3_c_b_(&ttc,&p)*R*moles);

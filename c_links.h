@@ -35,19 +35,24 @@ class LinkConst: public LinkBase {
 };
 
 /********************************************************************/
-// Energy flow proportional to temperature difference, Qdot=K*(T1-T2).
+// Energy flow proportional to temperature difference, Qdot=C*(T1^(p+1)-T2^(p+1))/(p+1).
 class LinkSimple: public LinkBase {
-    double K = 0;
+    double factor = 0;
+    double power  = 0;
   public:
 
     /*****************/
     LinkSimple(const str_cit & b, const str_cit & e) {
-      auto opts = get_key_val_args(b,e, {"type=", "K="});
-      if (opts["K"]!="") K = read_value(opts["K"], "W/K");
+      auto opts = get_key_val_args(b,e, {"type=", "K=", "factor=", "power="});
+      if (opts["K"]!="") { factor = read_value(opts["K"], "W/K"); power=0; }
+      if (opts["factor"]!="") factor = read_value(opts["factor"], "");
+      if (opts["power"]!="")  power  = read_value(opts["power"], "");
     }
 
     /*****************/
-    double get_qdot(const double T1, const double T2, const double B) const override { return K*(T1-T2);}
+    double get_qdot(const double T1, const double T2, const double B) const override {
+      double p=power+1;
+      return factor*(pow(T1,p)-pow(T2,p))/p;}
 };
 
 /********************************************************************/
