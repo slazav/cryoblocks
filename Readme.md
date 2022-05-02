@@ -1,6 +1,6 @@
 ## Cryoblocks -- thermal flow calculator for cryogenic (and any other) systems
 
-#### Basic example:
+### Basic example:
 
 ```
 #!../cryoblocks
@@ -65,7 +65,7 @@ run 18h 30m
 
 ![Result](https://github.com/slazav/cryoblocks/blob/main/examples/doc_example.png)
 
-#### Command file
+### Command file
 
 The system is defined as a set of `blocks` and `links` with certain
 properties. Program reads a command file with the following structure:
@@ -87,7 +87,41 @@ a single step is used.
 * `run_to  <final time> [<time step>]` -- Same as run, but do calculation
 until `<final time>` (with time shift taken into account).
 
+* `include <file name>` -- Read commands from a file.
+
+* `exit` -- Stop processing file and exit.
+
+
+* `define <name> <value>` -- Define a parameter which can be used later.
+`${<name>}` will be substituted by `<value>`.
+
+* `field <value>` -- Set magnetic field.
+
+* `field_rate <value>` -- Set magnetic field rate.
+
 * `time_shift <value>` -- When printing result add the value to time.
+
+* `max_tempstep <value>` -- Use smaller calculation steps to keep
+relative change of temperatures on each step less than given value.
+(Default: 1e-2).
+
+* `max_tempacc <value>` -- Use smaller calculation steps to keep
+relative temperature accuracy (difference between single dt and double
+dt/2 steps) less than given value. (Default: 1e-6).
+
+
+* `print <par1> ...` -- Set list of parameters for output during `run` command.
+  Use `T(<name>)` for a block temperature, `Q(name)` for heat flow
+  through a link, `t` for time, `B` for magnetic field. Example: `print t
+  H T(block1) T(block2) Q(link1)`.
+
+* `print_to_file <name>` -- Set filename for printing data. If name is `-` then
+use `stdout` (default).
+
+* `print_substeps 0|1` -- Print values for requested time steps or
+for actual calculation steps (they could be smaller to achieve reasonable
+accuracy).
+
 
 * `read_data <file name> <par1> ...` -- Read time grid and additional parameters and
 do calculation. Parameters determin data columns: `T(<name>)` for a block
@@ -104,38 +138,6 @@ columns of a file use commands:
 read_factors 3600 1e-3
 read_data file.dat - T(MC)
 ```
-
-
-* `print <par1> ...` -- Set list of parameters for output during `run` command.
-  Use `T(<name>)` for a block temperature, `Q(name)` for heat flow
-  through a link, `t` for time, `B` for magnetic field. Example: `print t
-  H T(block1) T(block2) Q(link1)`.
-
-* `define <name> <value>` -- Define a parameter which can be used later.
-`${<name>}` will be substituted by `<value>`.
-
-* `field <value>` -- Set magnetic field.
-
-* `field_rate <value>` -- Set magnetic field rate.
-
-* `print_to_file <name>` -- Set filename for printing data. If name is `-` then
-use `stdout` (default).
-
-* `print_substeps 0|1` -- Print values for requested time steps or
-for actual calculation steps (they could be smaller to achieve reasonable
-accuracy).
-
-* `max_tempstep <value>` -- Use smaller calculation steps to keep
-relative change of temperatures on each step less than given value.
-(Default: 1e-2).
-
-* `max_tempacc <value>` -- Use smaller calculation steps to keep
-relative temperature accuracy (difference between single dt and double
-dt/2 steps) less than given value. (Default: 1e-6).
-
-* `exit` -- Stop processing file and exit.
-
-* `include <file name>` -- Read commands from a file.
 
 #### Physics
 
@@ -201,8 +203,8 @@ Parameters:
 
 Following types of links are supported:
 
-* `link <name> <block1> <block2> type=const` -- A constant heat transfer. Not a physical process,
-but good for tests.
+* `link <name> <block1> <block2> type=const Qdot=<value>` -- A constant
+heat transfer. Not a physical process, but good for tests.
 
 * `link <name> <block1> <block2> type=simple K=<v> power=<p> factor=<f>` --
 One can use `K` parameter to specify constant heat conductivity in units
@@ -239,10 +241,10 @@ Korringa low). Parameters:
   * `mass=<v>` -- if material is set then mass can be used instead of moles
 
 * `link <name> <block1> <block2> type=el-ph [parameters]` --
-Electron-phonon coupling (Qdot = C*(T1^5-T2^5)*nmoles, see Pobell book f.10.9).
+Electron-phonon coupling (`Qdot = C*(T1^5-T2^5)*nmoles`, see Pobell book f.10.9).
 Parameters:
 
-  * `material=<v>` -- predefined values for. Variants: copper
+  * `material=<v>` -- predefined values for. Variants: `copper`
   * `C=<v>` -- set parameter C (overrides value set by `material` parameter), default 0
   * `moles=<v>` -- number of moles
   * `mass=<v>` -- if material is set then mass can be used instead of moles
