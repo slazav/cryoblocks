@@ -481,27 +481,32 @@ class Calculator {
     do_zeroc_calc(temps);
 
     while (1) {
-      auto temps1 = temps, temps2=temps;
+      auto temps1 = temps, temps2a=temps;
       auto dt1 = *t2-*t1;
       // dt1 step
       do_step(*t1, dt1, B+(*t1-t)*dB/dt, dt1*dB/dt, temps1);
 
       // two dt1/2 steps
-      do_step(*t1, dt1/2, B+(*t1-t)*dB/dt, dt1/2*dB/dt, temps2);
-      do_step(*t1+dt1/2, dt1/2, B+(*t1-t+dt1/2)*dB/dt, dt1/2*dB/dt, temps2);
+      do_step(*t1, dt1/2, B+(*t1-t)*dB/dt, dt1/2*dB/dt, temps2a);
+      auto temps2b(temps2a);
+      do_step(*t1+dt1/2, dt1/2, B+(*t1-t+dt1/2)*dB/dt, dt1/2*dB/dt, temps2b);
       // Calculate calculation accuracy:
       // - relative temperature change in temps1,
       // - relative temperature difference between temps2 and temps1
       double m1=0,m2=0;
-      for (auto i0 = temps.begin(), i1 = temps1.begin(), i2=temps2.begin();
-           i0!=temps.end() && i1!=temps1.end() && i2!=temps2.end(); i0++,i1++,i2++){
+      bool osc=false;
+      for (auto i0 = temps.begin(), i1 = temps1.begin(), i2a=temps2a.begin(), i2b=temps2b.begin();
+           i0!=temps.end() && i1!=temps1.end() && i2a!=temps2a.end() && i2b!=temps2b.end();
+           i0++,i1++,i2a++,i2b++){
         double v1 = fabs((i1->second - i0->second)/i0->second);
-        double v2 = fabs((i1->second - i2->second)/i0->second);
+        double v2 = fabs((i1->second - i2b->second)/i0->second);
         if (m1 < v1) m1 = v1;
         if (m2 < v2) m2 = v2;
+        // temperature oscillation
+        if ((i2b->second - i2a->second)*(i2a->second - i0->second) < 0) {osc=true; break;}
       }
       // Split calculation interval, throw error if it's too small
-      if (m1>max_tempstep || m2>max_tempacc){
+      if (m1>max_tempstep || m2>max_tempacc || osc){
         t2 = brkpts.insert(t2, *t1+dt1/2);
         if (*t1 + dt1/4.0 <= *t1) throw Err() << "timestep limit reached: " << dt1/2;
         continue;
