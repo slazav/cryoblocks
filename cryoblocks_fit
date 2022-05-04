@@ -18,6 +18,7 @@ import scipy.optimize
 # *  #FIT_RANGE <V1>:<V2>  -- crop data to the range
 # *  #FIT_SCALES <V1>:<V2> -- factors to multiply data columns in the file
 # *  #FIT_PLOT <NAME>      -- PNG file for plotting fit result (if needed)
+# *  #FIT_SKIP (0|1)       -- skip fitting, run cryoblocks with initial values
 ############################################################
 
 num_re = '[\+\-0-9\.eE]*[0-9\.]'
@@ -32,7 +33,7 @@ def cryoblocks_read(cmdfile):
   ret = {'cmd':'', 'names':[], 'units':[],
           'vals':[], 'mins':[], 'maxs':[],
           'cols':(0,1), 'scales':[], 'range':[], 'plot':'',
-          'fname':'', 'fcols':(0,1)
+          'fname':'', 'fcols':(0,1), 'skip': 0
         }
   with open(cmdfile) as f:
     while True:
@@ -80,6 +81,12 @@ def cryoblocks_read(cmdfile):
       res = re.match('^\s*#FIT_PLOT\s+(\S+)', l)
       if res:
         ret["plot"] = res.group(1)
+        print('Plot to file: ', ret["plot"])
+
+      # Skip fitting
+      res = re.match('^\s*#FIT_SKIP\s+([0-9]+)', l)
+      if res:
+        ret["skip"] = int(res.group(1))
         print('Plot to file: ', ret["plot"])
 
       # skip comments and empty lines
@@ -149,11 +156,12 @@ def minfunc(time, *pars):
   return temp
 
 # do fit
-res = scipy.optimize.curve_fit(minfunc, time, temp, p0=cb_info['vals'], bounds=(cb_info['mins'],cb_info['maxs']), xtol=1e-8, ftol=1e-8)
-cb_info['vals']=res[0]
+if not cb_info['skip']:
+  res = scipy.optimize.curve_fit(minfunc, time, temp, p0=cb_info['vals'], bounds=(cb_info['mins'],cb_info['maxs']), xtol=1e-8, ftol=1e-8)
+  cb_info['vals']=res[0]
 
 # run cryoblocks script with final values, without catching it's output
-cryoblocks_run(cb_info, res[0], 1)
+cryoblocks_run(cb_info, cb_info['vals'], 1)
 
 # print final values
 for n,v,u,m1,m2 in zip(cb_info['names'],cb_info['vals'],cb_info['units'],cb_info['mins'],cb_info['maxs']):

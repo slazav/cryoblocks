@@ -284,4 +284,5 @@ All informetion is stored in the `cryoblocks` command file, in comments started 
 *  `#FIT_RANGE <V1>:<V2>`  -- crop data to the range
 *  `#FIT_SCALES <V1>:<V2>` -- factors to multiply data columns in the file
 *  `#FIT_PLOT <NAME>`      -- PNG file for plotting fit result (if needed)
+*  `#FIT_SKIP (0|1)`       -- skip fitting, run cryoblocks with initial values
 
