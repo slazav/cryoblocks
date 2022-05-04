@@ -124,7 +124,10 @@ def cryoblocks_run(cb_info, values, to_file=0):
       text=True) as proc:
     proc.stdin.write(cmd)
     proc.stdin.close()
-    data = numpy.loadtxt(proc.stdout, comments="#", usecols=cols, unpack=True)
+    if not to_file:
+      data = numpy.loadtxt(proc.stdout, comments="#", usecols=cols, unpack=True)
+    else:
+      data = []
 
   return data
 
@@ -151,7 +154,7 @@ if len(cb_info["range"])==2:
 
 def minfunc(time, *pars):
   print(">>> ", pars)
-  c = cryoblocks_run(cb_info, pars)
+  c = cryoblocks_run(cb_info, pars, 0)
   temp = numpy.interp(time, c[0],c[1])
   return temp
 
