@@ -80,12 +80,19 @@ properties. Program reads a command file with the following structure:
 
 * `delete (block|link) <name>` -- Delete block or link.
 
-* `run  <time period> [<time step>]` -- Do calculations for a given time, print
-table with temperatures and heat flows. If `<time step>` is missing then
-a single step is used.
+* `run  <time> [step=<time step>] [abs=<0|1>] [to_field=<value>]` --
+Do calculations for a given time period, print results. If `step` step
+parameter is missing then a single step is used (internally it will be
+divided by substeps to keep accuracy, substep results can be printed by
+setting `print_substeps 1`). If `abs` parameter is missing or 0 then
+`<time>` is a calculation period length. otherwise it's final time at the
+end of the calculation (including shift set by `time_shift` command). If
+`to_field` parameter is used, then field rate is set to reach the
+specified field at the end of the calculation. Thern field rate is reset
+to a previous value.
 
-* `run_to  <final time> [<time step>]` -- Same as run, but do calculation
-until `<final time>` (with time shift taken into account).
+* `run_to  <final time> [<time step>]` -- DO NOT USE. Equivalent
+to `run <final time> abs=1`.
 
 * `include <file name>` -- Read commands from a file.
 

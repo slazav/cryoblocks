@@ -103,6 +103,8 @@ class Calculator {
   void set_max_tempacc(const double v) {max_tempacc = v;}
   void set_tshift(const double v) {tshift = v;}
 
+  double get_magn_field() const {return B;}
+  double get_magn_field_rate() const {return Bdot;}
   double get_tshift() const {return tshift;}
   double get_t() const {return t;}
 
@@ -695,14 +697,26 @@ try{
 
     // Wait for some time
     if (cmd == "run") {
-      if (args.size() < 1 || args.size() > 2)
-        throw Err() << "Wrong number of arguments. Expect: run <time> [<time step>]";
-      if (args.size()==1) args.push_back(args[0]);
-      calc.run(read_value(args[0], "s"), read_value(args[1], "s"));
+      if (args.size() < 1)
+        throw Err() << "Wrong number of arguments. Expect: run <time> [<time step>] [pars]";
+      auto opts = get_key_val_args(args.begin()+1,args.end(), {"abs=0", "step=", "to_field="});
+
+      auto period = read_value(args[0], "s");
+      if (opts["abs"]!="0") period -= calc.get_tshift() + calc.get_t();
+      auto step = opts["step"]!="" ? read_value(opts["step"], "s") : period;
+
+      auto old_rate = calc.get_magn_field_rate();
+      if (opts["to_field"]!=""){
+        auto B1 = calc.get_magn_field();
+        auto B2 = read_value(opts["to_field"], "T");
+        calc.set_magn_field_rate((B2-B1)/period);
+      }
+      calc.run(period, step);
+      calc.set_magn_field_rate(old_rate);
       continue;
     }
 
-    // Wait until time
+    // Wait until time (deprecated, use "run abs=1")
     if (cmd == "run_to") {
       if (args.size() < 1 || args.size() > 2)
         throw Err() << "Wrong number of arguments. Expect: run <final time> <time step>";
