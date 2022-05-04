@@ -1,0 +1,177 @@
+#!/usr/bin/python3
+
+import re
+import sys
+import numpy
+import subprocess
+import scipy.optimize
+
+############################################################
+# A script for fitting data to a CRYOBLOCKS model.
+# Usage: cryoblocks_fit <command file>
+#
+# All informetion is stored in the cryoblocks command file,
+# in comments started with FIT word:
+# *  define <name> <value> #FIT <MIN>:<MAX> -- use variable as fit parameter
+# *  #FIT_COLS <N1>:<N2> -- which colums of cryoblocks output should be used
+# *  #FIT_FILE <NAME> <N1>:<N2> -- name of data file and data columns in it
+# *  #FIT_RANGE <V1>:<V2>  -- crop data to the range
+# *  #FIT_SCALES <V1>:<V2> -- factors to multiply data columns in the file
+# *  #FIT_PLOT <NAME>      -- PNG file for plotting fit result (if needed)
+############################################################
+
+num_re = '[\+\-0-9\.eE]*[0-9\.]'
+############################################################
+# Read cryoblocks command file,
+# parse special comments:
+#  `#FIT <min>:<max>` after varianle definition to use the variable in the fit
+#  `#FIT_COLS <x>:<y>` to set otput columns for the fit
+# Return dictionary with all collected information
+
+def cryoblocks_read(cmdfile):
+  ret = {'cmd':'', 'names':[], 'units':[],
+          'vals':[], 'mins':[], 'maxs':[],
+          'cols':(0,1), 'scales':[], 'range':[], 'plot':'',
+          'fname':'', 'fcols':(0,1)
+        }
+  with open(cmdfile) as f:
+    while True:
+      # read line by line
+      l = f.readline()
+      if not l: break
+
+      # find parameters for fit
+      res = re.match('^\s*define\s+(\S+)\s+('+num_re+')(\S*)\s+#FIT\s*('+num_re+'):('+num_re+')', l)
+      if res:
+        ret["names"].append(res.group(1))
+        ret["vals"].append(float(res.group(2)))
+        ret["units"].append(res.group(3))
+        ret["mins"].append(float(res.group(4)))
+        ret["maxs"].append(float(res.group(5)))
+        print('Fit parameter: %s, val=%s, min=%s, max=%s [%s]'\
+           %(res.group(1), res.group(2), res.group(4), res.group(5), res.group(3)))
+
+      # Fit columns
+      res = re.match('^\s*#FIT_COLS\s+([0-9]+):([0-9]+)', l)
+      if res:
+        ret["cols"] = (int(res.group(1)), int(res.group(2)))
+        print('Fit columns (x,y): ', ret["cols"])
+
+      # Which data file (with columns) should be used for fit
+      res = re.match('^\s*#FIT_FILE\s+(\S+)\s+([0-9]+):([0-9]+)', l)
+      if res:
+        ret["fname"] = res.group(1)
+        ret["fcols"] = (int(res.group(2)), int(res.group(3)))
+        print('Fit file name: ', ret["fname"], ", cols: ", ret["fcols"])
+
+      # Fit range
+      res = re.match('^\s*#FIT_RANGE\s+('+num_re+'):('+num_re+')', l)
+      if res:
+        ret["range"] = (float(res.group(1)),float(res.group(2)))
+        print('Fit range: ', ret["range"])
+
+      # Fit scales (multiply data columns from the file)
+      res = re.match('^\s*#FIT_SCALES\s+('+num_re+'):('+num_re+')', l)
+      if res:
+        ret["scales"] = (float(res.group(1)),float(res.group(2)))
+        print('Fit scales: ', ret["scales"])
+
+      # Fit plot
+      res = re.match('^\s*#FIT_PLOT\s+(\S+)', l)
+      if res:
+        ret["plot"] = res.group(1)
+        print('Plot to file: ', ret["plot"])
+
+      # skip comments and empty lines
+      l = re.sub('#.*$', '', l)
+      if re.match('^\s+$', l): continue
+
+      # join line to the total command
+      ret["cmd"] = ret["cmd"] + l
+
+  return ret
+
+
+############################################################
+# Run cryoblocks calculation using a structure `cb_info` obtained
+# by `cryoblocks_read` and new parameter values.
+# Load output data (only cols) as numpy array.
+def cryoblocks_run(cb_info, values, to_file=0):
+  cmd   = cb_info['cmd']
+  names = cb_info['names']
+  cols  = cb_info['cols']
+
+  # replace parameter definitions
+  for n,v in zip(names,values):
+    cmd=re.sub('^\s*define\s+%s\s+[\+\-0-9\.eE]*[0-9\.]' %(n),
+           'define %s %.16e' %(n,v), cmd, 1, re.MULTILINE)
+
+  # remove all print_to_file statements
+  if not to_file:
+    cmd=re.sub('^\s*print_to_file.*$', '', cmd, 0, re.MULTILINE)
+
+  # run cryoblocks program, load output as numpy array
+  with subprocess.Popen(['cryoblocks', '-'],
+    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+      stderr=subprocess.DEVNULL,
+      text=True) as proc:
+    proc.stdin.write(cmd)
+    proc.stdin.close()
+    data = numpy.loadtxt(proc.stdout, comments="#", usecols=cols, unpack=True)
+
+  return data
+
+############################################################
+
+if (len(sys.argv)!=2):
+  print('Usage: ' + sys.argv[0] + ' <filename>')
+  exit(1)
+
+cb_info = cryoblocks_read(sys.argv[1])
+
+# read data
+data = numpy.loadtxt(cb_info["fname"], comments="#", usecols=cb_info["fcols"], unpack=True)
+time=data[0]
+temp=data[1]
+
+if len(cb_info["scales"])==2:
+  time=time*cb_info["scales"][0]
+  temp=temp*cb_info["scales"][1]
+
+if len(cb_info["range"])==2:
+  ii=numpy.logical_and(time>=cb_info["range"][0], time<cb_info["range"][1])
+  time=time[ii]; temp=temp[ii]
+
+def minfunc(time, *pars):
+  print(">>> ", pars)
+  c = cryoblocks_run(cb_info, pars)
+  temp = numpy.interp(time, c[0],c[1])
+  return temp
+
+# do fit
+res = scipy.optimize.curve_fit(minfunc, time, temp, p0=cb_info['vals'], bounds=(cb_info['mins'],cb_info['maxs']), xtol=1e-8, ftol=1e-8)
+cb_info['vals']=res[0]
+
+# run cryoblocks script with final values, without catching it's output
+cryoblocks_run(cb_info, res[0], 1)
+
+# print final values
+for n,v,u,m1,m2 in zip(cb_info['names'],cb_info['vals'],cb_info['units'],cb_info['mins'],cb_info['maxs']):
+  print('define %s %g%s #FIT %g:%g' %(n,v,u,m1,m2))
+
+
+# Do plot if needed
+if cb_info["plot"]!='':
+  import matplotlib.pyplot as plt
+
+  plt.plot(time, temp, '*')
+  tt=numpy.linspace(time[0],time[-1], 1000)
+  plt.plot(tt, minfunc(tt, *cb_info['vals']), '-')
+
+  plt.xlabel("X")
+  plt.ylabel("Y")
+  plt.grid(which='both')
+  fig = plt.gcf()
+  fig.set_size_inches(12, 12)
+  plt.savefig(cb_info["plot"], dpi=100)
+

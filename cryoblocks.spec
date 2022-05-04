@@ -24,6 +24,7 @@ Cryoblocks -- thermal flow calculator for cryogenic (and any other) systems.
 
 %install
 install -m 755 -D cryoblocks %buildroot%_bindir/cryoblocks
+install -m 755 -D cryoblocks_fit %buildroot%_bindir/cryoblocks_fit
 
 %files
 %_bindir/cryoblocks

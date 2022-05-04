@@ -146,7 +146,7 @@ read_factors 3600 1e-3
 read_data file.dat - T(MC)
 ```
 
-#### Physics
+### Physics
 
 Consider a block with temperature `T` with external heating power `dQ`.
 Entropy of the block `S` depends on temperature and maybe other
@@ -169,12 +169,12 @@ capacity are calculated differently: before and after each step a
 zero of total heat flow on every such block is found as a function of
 temperatures of these blocks.
 
-#### Parameter reading
+### Parameter reading
 
 All parameters usually have some dimensions, it should be specified. For example,
 time in `run` command can be written as `1s`, `0.1m`, `1e-2ms`, etc.
 
-#### Blocks
+### Blocks
 
 Following types of blocks are supported:
 
@@ -206,7 +206,7 @@ Parameters:
   * `volume=<v>` -- Can be used instead of moles (pressure-dependent molar volume is used).
 
 
-#### Links
+### Links
 
 Following types of links are supported:
 
@@ -268,3 +268,20 @@ chamber, block2 - thermal bath at any temperature.
 * `link <name> <block1> <block2> type=dilution_circ ndot=<V> phase=<C|D>`
 Heat transfer by circulation in a dilution refrigerator. Phase parameter
 is "C" or "D". T2 is not used in the calculation.
+
+### Fitting data to a `cryoblocks` model
+
+A python script `cryoblocks_fit` is available for fitting data to a `cryoblocks` model.
+
+Usage: `cryoblocks_fit <command file>`
+
+All informetion is stored in the `cryoblocks` command file, in comments started with
+`FIT` word:
+
+*  `define <name> <value> #FIT <MIN>:<MAX>` -- use variable as fit parameter
+*  `#FIT_COLS <N1>:<N2>` -- which colums of cryoblocks output should be used
+*  `#FIT_FILE <NAME> <N1>:<N2>` -- name of data file and data columns in it
+*  `#FIT_RANGE <V1>:<V2>`  -- crop data to the range
+*  `#FIT_SCALES <V1>:<V2>` -- factors to multiply data columns in the file
+*  `#FIT_PLOT <NAME>`      -- PNG file for plotting fit result (if needed)
+
