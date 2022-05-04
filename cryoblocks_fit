@@ -144,6 +144,12 @@ data = numpy.loadtxt(cb_info["fname"], comments="#", usecols=cb_info["fcols"], u
 time=data[0]
 temp=data[1]
 
+# remove NaN's
+ii=~numpy.isnan(temp)
+if not numpy.all(ii):
+  time=time[ii]
+  temp=temp[ii]
+
 if len(cb_info["scales"])==2:
   time=time*cb_info["scales"][0]
   temp=temp*cb_info["scales"][1]
