@@ -153,7 +153,7 @@ read_value(const std::string & str, const std::string & unit){
     if (u=="kOe/h") return v*1e-1/3600.0;
   }
 
-  // heat leak term proportinal to magnetic field
+  // heat leak term proportional to magnetic field
   else if (unit == "W/T"){
     if (u=="mW/T") return v*1e-3;
     if (u=="uW/T") return v*1e-6;
@@ -161,12 +161,20 @@ read_value(const std::string & str, const std::string & unit){
     if (u=="pW/T")   return v*1e-12;
   }
 
-  // heat leak term proportinal to magnetic field squared
+  // heat leak term proportional to magnetic field squared
   else if (unit == "W/T^2"){
     if (u=="mW/T^2") return v*1e-3;
     if (u=="uW/T^2") return v*1e-6;
     if (u=="nW/T^2") return v*1e-9;
     if (u=="pW/T^2")   return v*1e-12;
+  }
+
+  // heat leak term proportional to magnetic field rate squared
+  else if (unit == "W*s^2/T^2"){
+    if (u=="mW*s^2/T^2") return v*1e-3;
+    if (u=="uW*s^2/T^2") return v*1e-6;
+    if (u=="nW*s^2/T^2") return v*1e-9;
+    if (u=="pW*s^2/T^2")   return v*1e-12;
   }
 
 
