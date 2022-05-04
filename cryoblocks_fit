@@ -119,8 +119,8 @@ def cryoblocks_run(cb_info, values, to_file=0):
 
   # run cryoblocks program, load output as numpy array
   with subprocess.Popen(['cryoblocks', '-'],
-    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-      stderr=subprocess.DEVNULL,
+      stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE,
       text=True) as proc:
     proc.stdin.write(cmd)
     proc.stdin.close()
@@ -128,6 +128,11 @@ def cryoblocks_run(cb_info, values, to_file=0):
       data = numpy.loadtxt(proc.stdout, comments="#", usecols=cols, unpack=True)
     else:
       data = []
+    rc = proc.wait()
+    if rc:
+      print('>>> Error in cryoblocks script:')
+      print(proc.stderr.read())
+      exit(1)
 
   return data
 
