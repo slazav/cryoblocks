@@ -12,7 +12,7 @@ class LinkBase {
     typedef std::vector<std::string>::const_iterator str_cit;
 
     // get heat flow (in W) from block1 to block2
-    virtual double get_qdot(const double T1, const double T2, const double B) const = 0;
+    virtual double get_qdot(const double T1, const double T2, const double B, const double Bdot) const = 0;
 
 };
 
@@ -30,7 +30,7 @@ class LinkConst: public LinkBase {
     }
 
     /*****************/
-    double get_qdot(const double T1, const double T2, const double B) const override { return Q;}
+    double get_qdot(const double T1, const double T2, const double B, const double Bdot) const override { return Q;}
 
 };
 
@@ -50,7 +50,7 @@ class LinkSimple: public LinkBase {
     }
 
     /*****************/
-    double get_qdot(const double T1, const double T2, const double B) const override {
+    double get_qdot(const double T1, const double T2, const double B, const double Bdot) const override {
       double p=power+1;
       return factor*(pow(T1,p)-pow(T2,p))/p;}
 };
@@ -94,7 +94,7 @@ class LinkSimpleBar: public LinkBase {
     }
 
     /*****************/
-    double get_qdot(const double T1, const double T2, const double B) const override {
+    double get_qdot(const double T1, const double T2, const double B, const double Bdot) const override {
       // Q = SL * \int_T1^T2 K(T) dT
       return SL*Ka/(Kb+1) * (pow(T1, Kb+1) - pow(T2, Kb+1));
     }
@@ -115,7 +115,7 @@ class LinkMetalBar: public LinkBase {
     }
 
     /*****************/
-    double get_qdot(const double T1, const double T2, const double B) const override {
+    double get_qdot(const double T1, const double T2, const double B, const double Bdot) const override {
       // K = T*lambda/R
       return (T1*T1-T2*T2)/2 * l/R;
     }
@@ -139,7 +139,7 @@ class LinkFieldHL: public LinkBase {
     }
 
     /*****************/
-    double get_qdot(const double T1, const double T2, const double B) const override {
+    double get_qdot(const double T1, const double T2, const double B, const double Bdot) const override {
       double q = B0;
       if (B1!=0) q+=B1*B;
       if (B2!=0) q+=B2*pow(B,2);
@@ -202,7 +202,7 @@ class LinkKorringa: public LinkBase {
     }
 
     /*****************/
-    double get_qdot(const double T1, const double T2, const double B) const override {
+    double get_qdot(const double T1, const double T2, const double B, const double Bdot) const override {
       // heat capacity of copper nuclei:
       double x = gyro*hbar*sqrt(B*B + Bint*Bint)/kB/T1/2.0;
       double y = (2.0*spin + 1.0)*x;
@@ -251,7 +251,7 @@ class LinkElPh: public LinkBase {
     }
 
     /*****************/
-    double get_qdot(const double T1, const double T2, const double B) const override {
+    double get_qdot(const double T1, const double T2, const double B, const double Bdot) const override {
       return (pow(T1,5)-pow(T2,5))*CM;
     }
 
@@ -292,7 +292,7 @@ class LinkKapRes: public LinkBase {
     }
 
     /*****************/
-    double get_qdot(const double T1, const double T2, const double B) const override {
+    double get_qdot(const double T1, const double T2, const double B, const double Bdot) const override {
       return area/((power+1)*C) * (pow(T1,power+1)-pow(T2,power+1));
     }
 };
@@ -309,7 +309,7 @@ class LinkDil: public LinkBase {
       if (ndot <= 0) throw Err() << "A positive value expected: ndot";
     }
     /*****************/
-    double get_qdot(const double T1, const double T2, const double B) const override {
+    double get_qdot(const double T1, const double T2, const double B, const double Bdot) const override {
       return 84*T1*T1*ndot; }
 };
 
@@ -330,7 +330,7 @@ class LinkCirc: public LinkBase {
       if (phase<1 || phase>2) throw Err() << "Value is missing: phase (expected C or D)";
     }
     /*****************/
-    double get_qdot(const double T1, const double T2, const double B) const override {
+    double get_qdot(const double T1, const double T2, const double B, const double Bdot) const override {
       if (phase == 1) return  23*T1*T1*ndot;
       if (phase == 2) return 107*T1*T1*ndot;
       throw Err() << "Wrong value of phase parameter: " << phase;

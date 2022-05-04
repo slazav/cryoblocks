@@ -93,7 +93,7 @@ class Calculator {
     auto c = get_conn(name);
     auto T1 = get_block_temp(temps, c.first);
     auto T2 = get_block_temp(temps, c.second);
-    return l->get_qdot(T1,T2,B);
+    return l->get_qdot(T1,T2,B,Bdot);
   }
 
   void set_magn_field(const double v) {B = v;}
@@ -348,13 +348,13 @@ class Calculator {
       // temperatures of both blocks and flow between them:
       auto T1 = get_block_temp(temps, c.first);;
       auto T2 = get_block_temp(temps, c.second);;
-      auto qdot = l.second->get_qdot(T1,T2,B);
+      auto qdot = l.second->get_qdot(T1,T2,B,Bdot);
 
       // If block1 is zero-c block, add to
       // Q(block1), dQ(block1)/dT1, dQ(block2)/dT1
       if (b1->is_zero_c()){
         auto T1a = T1*(1+rstep);
-        auto qdota = l.second->get_qdot(T1a,T2,B);
+        auto qdota = l.second->get_qdot(T1a,T2,B,Bdot);
         auto dqdt1 = (qdota-qdot)/(T1a-T1);
         auto i = num[c.first];
         *gsl_vector_ptr(Q, i) -= -qdot;
@@ -367,7 +367,7 @@ class Calculator {
       // Same for block2
       if (b2->is_zero_c()){
         auto T2a = T2*(1+rstep);
-        auto qdota = l.second->get_qdot(T1,T2a,B);
+        auto qdota = l.second->get_qdot(T1,T2a,B,Bdot);
         auto dqdt2 = (qdota-qdot)/(T2a-T2);
         auto i = num[c.second];
         *gsl_vector_ptr(Q,i) += -qdot;
