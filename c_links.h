@@ -125,20 +125,25 @@ class LinkMetalBar: public LinkBase {
 /********************************************************************/
 // Field-dependent heat leak with terms proportional to B, B^2
 class LinkFieldHL: public LinkBase {
-    double xB  = 0;
-    double xB2 = 0;
+    double B0 = 0;
+    double B1 = 0;
+    double B2 = 0;
   public:
 
     /*****************/
     LinkFieldHL(const str_cit & b, const str_cit & e) {
-      auto opts = get_key_val_args(b,e, {"type=", "B=", "B2="});
-      if (opts["B"]!="")  xB  = read_value(opts["B"],  "W/T");
-      if (opts["B2"]!="") xB2 = read_value(opts["B2"], "W/T^2");
+      auto opts = get_key_val_args(b,e, {"type=", "B0=", "B1=", "B2="});
+      if (opts["B0"]!="") B0 = read_value(opts["B0"], "W");
+      if (opts["B1"]!="") B1 = read_value(opts["B1"], "W/T");
+      if (opts["B2"]!="") B2 = read_value(opts["B2"], "W/T^2");
     }
 
     /*****************/
     double get_qdot(const double T1, const double T2, const double B) const override {
-      return B*xB + B*B*xB2;}
+      double q = B0;
+      if (B1!=0) q+=B1*B;
+      if (B2!=0) q+=B2*pow(B,2);
+      return q;}
 };
 
 

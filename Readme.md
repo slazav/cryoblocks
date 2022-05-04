@@ -222,8 +222,8 @@ Heat transfer is calculated as `Qdot = <factor>*(T1^P - T2^P)/P`, where `P=<powe
 * `link <name> <block1> <block2> type=metal_bar R=<v>` -- A bar made of metal.
 Total resistance R, Wiedemann-Franz low is used to calculate heat conductivity.
 
-* `link <name> <block1> <block2> type=field_heat_leak B=<v> B2=<v>` -- A field-dependent
-heat leak, `Qdot = <B>*B + <B2>*B^2`. By default `B=0W/T, B2=0W/T^2`.
+* `link <name> <block1> <block2> type=field_heat_leak B0=<v> B1=<v> B2=<v>` -- A field-dependent
+heat leak, `Qdot = <B0> + <B1>*B + <B2>*B^2`. By default all parameters are 0.
 
 * `link <name> <block1> <block2> type=simple_bar [paramters]` -- A bar made of some material
 with Ka*T^Kb heat conductivity [W/m/K]. Length L, cross-section area S. Parameters:
