@@ -1,5 +1,5 @@
 Name:         cryoblocks
-Version:      1.1
+Version:      1.2
 Release:      alt1
 
 Summary:      Cryoblocks -- thermal flow calculator for cryogenic (and any other) systems
@@ -30,6 +30,24 @@ install -m 755 -D cryoblocks_fit %buildroot%_bindir/cryoblocks_fit
 %_bindir/cryoblocks
 
 %changelog
+* Thu May 05 2022 Vladislav Zavjalov <slazav@altlinux.org> 1.2-alt1
+- v1.2:
+ - Change in `run` command: no second argument, options "abs",
+   "to_field", "step". Also add `run_to` command which is now depreciated.
+ - Improve calculation of a mixture of big and small heat capacity blocks..
+   (dump tiny temperature oscillations).
+ - New commands: "read", "read_factors", "time_shift", "delete", "include"
+ - Allow reading commands from stdin (use "-" as filename)
+ - Add temperature dependence to simple blocks and links. Now heat capacity
+   of a simple block and thermal conductivity of a simple link  can be set
+   as <factor>*T^<power>.
+ - New link type: field_heat_leak: heat flow proportional to
+   B, B^2, (dB/dt)^2
+ - kap_res_he3 link: add C parameter to override resistance scaling.
+ - Add `cryoblocks_fit` - a python script for fitting data to a cryoblocks
+   model. All fit parameters are defined in cryoblocks command file,
+   same file can be passed to cryoblocks and cryoblocks_fit programs.
+
 * Sat Apr 16 2022 Vladislav Zavjalov <slazav@altlinux.org> 1.1-alt1
 - v1.1:
   - adaptive steps with configurable accuracy;
