@@ -96,6 +96,8 @@ def cryoblocks_read(cmdfile):
       # join line to the total command
       ret["cmd"] = ret["cmd"] + l
 
+  if len(ret["names"])==0: ret["skip"]=1
+
   return ret
 
 
