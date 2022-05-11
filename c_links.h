@@ -128,14 +128,16 @@ class LinkFieldHL: public LinkBase {
     double B0 = 0;
     double B1 = 0;
     double B2 = 0;
+    double dB2 = 0;
   public:
 
     /*****************/
     LinkFieldHL(const str_cit & b, const str_cit & e) {
-      auto opts = get_key_val_args(b,e, {"type=", "B0=", "B1=", "B2="});
+      auto opts = get_key_val_args(b,e, {"type=", "B0=", "B1=", "B2=", "dB2="});
       if (opts["B0"]!="") B0 = read_value(opts["B0"], "W");
       if (opts["B1"]!="") B1 = read_value(opts["B1"], "W/T");
       if (opts["B2"]!="") B2 = read_value(opts["B2"], "W/T^2");
+      if (opts["dB2"]!="") dB2 = read_value(opts["dB2"], "W*s^2/T^2");
     }
 
     /*****************/
@@ -143,6 +145,7 @@ class LinkFieldHL: public LinkBase {
       double q = B0;
       if (B1!=0) q+=B1*B;
       if (B2!=0) q+=B2*pow(B,2);
+      if (dB2!=0) q+=dB2*pow(Bdot,2);
       return q;}
 };
 

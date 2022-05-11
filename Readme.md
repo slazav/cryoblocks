@@ -222,8 +222,9 @@ Heat transfer is calculated as `Qdot = <factor>*(T1^P - T2^P)/P`, where `P=<powe
 * `link <name> <block1> <block2> type=metal_bar R=<v>` -- A bar made of metal.
 Total resistance R, Wiedemann-Franz low is used to calculate heat conductivity.
 
-* `link <name> <block1> <block2> type=field_heat_leak B0=<v> B1=<v> B2=<v>` -- A field-dependent
-heat leak, `Qdot = <B0> + <B1>*B + <B2>*B^2`. By default all parameters are 0.
+* `link <name> <block1> <block2> type=field_heat_leak B0=<v> B1=<v> B2=<v> dB2=<v>`
+-- A field-dependent heat leak, `Qdot = <B0> + <B1>*B + <B2>*B^2 + <dB2>*(dB/dt)^2`.
+By default all parameters are 0.
 
 * `link <name> <block1> <block2> type=simple_bar [paramters]` -- A bar made of some material
 with Ka*T^Kb heat conductivity [W/m/K]. Length L, cross-section area S. Parameters:
@@ -275,7 +276,7 @@ A python script `cryoblocks_fit` is available for fitting data to a `cryoblocks`
 
 Usage: `cryoblocks_fit <command file>`
 
-All informetion is stored in the `cryoblocks` command file, in comments started with
+All additional information is stored in the `cryoblocks` command file, in comments started with
 `FIT` word:
 
 *  `define <name> <value> #FIT <MIN>:<MAX>` -- use variable as fit parameter
