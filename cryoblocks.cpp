@@ -413,6 +413,10 @@ class Calculator {
     double max = 0.0;
     for (const auto & n : num){
       auto v = gsl_vector_get(DT, n.second);
+
+      // avoid negative temperatures
+      if (temps[n.first]+v < 0) v = -temps[n.first]*0.99;
+
       temps[n.first] += v;
       double e = fabs(v/temps[n.first]);
       if (max < e) max = e;
@@ -461,7 +465,10 @@ class Calculator {
       auto n = b.first;
       auto dQ = bq.count(n)? bq[n] * dt : 0;
       auto T  = get_block_temp(temps, n);
-      temps[n] += b.second->get_dt(dQ, T, B, Bdot*dt);
+      auto dT = b.second->get_dt(dQ, T, B, Bdot*dt);
+      // avoid negative temperatures
+      if (T+dT<0) dT = -T*0.99;
+      temps[n] += dT;
     }
 
     // repeat calculation of zero-C blocks to have them in the equilibrium after the step
