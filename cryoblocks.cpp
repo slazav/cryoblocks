@@ -544,6 +544,7 @@ class Calculator {
     do_zeroc_calc(temps0);
     print_data(t, B, temps0);
     for (; t<te; t+=dt, B+=dB){
+      if (t+dt>te) dt = te-t;
       do_adaptive_step(t,dt,B,dB,temps0);
       print_data(t+dt, B+dB, temps0);
     }
