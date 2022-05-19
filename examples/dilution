@@ -41,8 +41,9 @@ link kr3 he3c he3d type=kap_res_he3 power=2 area=${A0}
 
 print T(bath) T(he1c) T(he2c) T(he3c)  T(mc)  T(he3d) T(he2d) T(he1d)
 
-run 0s 0.1s
+run 0s
 
 print Q(l1c) Q(l2c) Q(l3c) Q(l4c)  Q(cool)  Q(l1d) Q(l2d) Q(l3d) Q(l4d)  Q(kr1) Q(kr2) Q(kr3)
 
-run 0s 0.1s
+run 0s
+

@@ -17,4 +17,4 @@ max_tempstep 0.1
 print_to_file substeps.dat
 print t T(a) T(b)
 
-run 10s 1s
+run 10s step=1s

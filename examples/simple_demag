@@ -8,5 +8,5 @@ field 7T
 field_rate -0.1T/s
 
 print t B T(a)
-run 70s 0.1s
+run 70s step=0.1s
 

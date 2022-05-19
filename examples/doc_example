@@ -44,7 +44,7 @@ print t B T(MC) T(Cu) T(He) Q(precool)
 print_to_file doc_example.dat
 
 # Precool for 72h.
-run 72h 30m
+run 72h step=30m
 
 ####
 # Now we precooled to about 9mK. Let's disconnect HS and
@@ -52,8 +52,8 @@ run 72h 30m
 
 link precool MC Cu type=metal_bar R=1MOhm
 field_rate -0.76T/h
-run 10h 30m
+run 10h step=30m
 
 # And now just wait
 field_rate 0T/h
-run 18h 30m
+run 18h step=30m

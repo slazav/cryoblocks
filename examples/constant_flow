@@ -8,4 +8,4 @@ link l1 a b   type=const Qdot=1mW
 
 print t T(b)
 
-run 1s 0.01s
+run 1s step=0.01s

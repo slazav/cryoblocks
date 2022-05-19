@@ -9,4 +9,4 @@ link l1 a b   type=metal_bar R=1Ohm
 
 print t T(a) T(b)
 
-run 100s 1s
+run 100s step=1s
