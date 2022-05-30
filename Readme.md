@@ -198,8 +198,12 @@ heat capacity is allowed.
   * `moles=<v>` -- Number of moles.
   * `mass=<v>` -- If material is set then mass can be used instead of moles.
 
-* `block <name> <temperature> type=liquid_he3 [parameters]` -- liquid He3 (uses he3lib).
-Parameters:
+* `block <name> <temperature> type=curie-weiss [parameters]` -- Curie-Weiss magnet with spin 1/2. Parameters:
+  * `Tc=<v>`   -- Critical temperature.
+  * `gyro=<v>` -- Gyromagnetic ratio.
+  * `moles=<v>` -- Number of moles.
+
+* `block <name> <temperature> type=liquid_he3 [parameters]` -- liquid He3 (uses he3lib). Parameters:
   * `P=<v>` -- Pressure
   * `moles=<v>` -- Number of moles
   * `mass=<v>` -- Can be used instead of moles.

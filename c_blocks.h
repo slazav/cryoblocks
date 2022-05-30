@@ -73,19 +73,20 @@ class BlockZero: public BlockBase {
     bool is_zero_c() const override {return true;}
 };
 
+#ifdef HE3
+extern "C" {
+#include <he3.h>
+}
+
 /********************************************************************/
-// A block with paramegnetic heat capacity
+// Paramagnetic material
 class BlockParamagn: public BlockBase {
 
   double Bint=0; // internal field [T]
   double gyro=0; // gyromagnetic ratio [rad/s/T]
   double spin=0; // 1/2, 3/2, etc.
   double moles=0; // number of moles
-
-  double hbar = 1.05457181710e-34; // [J s]
-  double NA = 6.02214086e+23;      // [1/mol] Avogadro's Constant
-  double kB = 1.38064852e-23;      // [m^2 kg s-2 K-1] [J/K] Boltzmann constant
-  double R = NA*kB;                // R-constant, [J/mol/K]
+  double R = 8.314472; // R-constant, [J/mol/K]
 
   public:
 
@@ -120,22 +121,47 @@ class BlockParamagn: public BlockBase {
     }
 
     double get_dt(const double dQ, const double T, const double B, const double dB) const override{
-      double x = gyro*hbar*sqrt(B*B + Bint*Bint)/kB/T/2.0;
-      double y = (2.0*spin + 1.0)*x;
-      double C = R*moles *(pow(x/sinh(x),2) - pow(y/sinh(y),2));
-      // dT = dQ/C - D/C dB
-      // We want to find D/C = (dS/dB)/(dS/dT). S depends only on A = T/sqrt(B*B + Bint*Bint)
-      // Then D/C = (dA/dB) / (dA/dT) = - T*B/(B*B + Bint*Bint)
-      double DC = T*B/(B*B + Bint*Bint);
-      return dQ/C + DC*dB;
+      double t(T), b(B), bi(Bint), g(gyro), s(spin);
+      double C = moles*magn_par_c_(&t,&b,&bi,&g,&s);
+      double D = magn_par_d_(&t,&b,&bi,&g,&s);
+      return dQ/C - D*dB;
     }
 
 };
 
-#ifdef HE3
-extern "C" {
-#include <he3.h>
-}
+/********************************************************************/
+// Curie-Weiss magnet with spin 1/2
+class BlockCurieWeiss: public BlockBase {
+
+  double Tc=0;   // critical temp [K]
+  double gyro=0; // gyromagnetic ratio [rad/s/T]
+  double moles=0; // number of moles
+  double R = 8.314472; // R-constant, [J/mol/K]
+
+  public:
+
+    BlockCurieWeiss(const str_cit & b, const str_cit & e){
+      auto opts = get_key_val_args(b,e, {"type=", "Tc=", "gyro=", "material=", "moles=", "mass="});
+
+      if (opts["Tc"]  != "") Tc = read_value(opts["Tc"], "K");
+      if (Tc <= 0) throw Err() << "A positive value expected: Tc";
+
+      if (opts["gyro"]  != "") gyro  = read_value(opts["gyro"], "rad/s/T");
+      if (gyro  <= 0) throw Err() << "A positive value expected: gyro";
+
+      if (opts["moles"] != "") moles = read_value(opts["moles"], "");
+      if (moles <= 0) throw Err() << "A positive value expected: moles";
+    }
+
+    double get_dt(const double dQ, const double T, const double B, const double dB) const override{
+      double t(T), b(B), tc(Tc), g(gyro);
+      double C = moles*R*magn_cw_c_(&t,&b,&tc,&g);
+      double D = magn_cw_d_(&t,&b,&tc,&g);
+      return dQ/C - D*dB;
+    }
+
+};
+
 
 /********************************************************************/
 // Liquid He3
@@ -143,12 +169,9 @@ extern "C" {
 class BlockLHe3: public BlockBase {
 
   double P=0;  // pressure [bar]
-  double Tc; // Tc, K
-  double moles;
-
-  double NA = 6.02214086e+23;      // [1/mol] Avogadro's Constant
-  double kB = 1.38064852e-23;      // [m^2 kg s-2 K-1] [J/K] Boltzmann constant
-  double R = NA*kB;                // R-constant, [J/mol/K]
+  double Tc;   // Tc, K
+  double moles=0;
+  double R = 8.314472; // R-constant, [J/mol/K]
 
   public:
 
@@ -202,10 +225,11 @@ std::shared_ptr<BlockBase> create_block(
     return std::shared_ptr<BlockBase>(new BlockZero(b,e));}
   if (type == "simple") {
     return std::shared_ptr<BlockBase>(new BlockSimple(b,e));}
+#ifdef HE3
   if (type == "paramagnet") {
     return std::shared_ptr<BlockBase>(new BlockParamagn(b,e)); }
-
-#ifdef HE3
+  if (type == "curie-weiss") {
+    return std::shared_ptr<BlockBase>(new BlockCurieWeiss(b,e)); }
   if (type == "liquid_he3") {
     return std::shared_ptr<BlockBase>(new BlockLHe3(b,e)); }
 #endif
