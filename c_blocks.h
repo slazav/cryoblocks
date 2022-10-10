@@ -122,7 +122,7 @@ class BlockParamagn: public BlockBase {
 
     double get_dt(const double dQ, const double T, const double B, const double dB) const override{
       double t(T), b(B), bi(Bint), g(gyro), s(spin);
-      double C = moles*magn_par_c_(&t,&b,&bi,&g,&s);
+      double C = moles*R*magn_par_c_(&t,&b,&bi,&g,&s);
       double D = magn_par_d_(&t,&b,&bi,&g,&s);
       return dQ/C - D*dB;
     }
