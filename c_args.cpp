@@ -1,13 +1,14 @@
+#include <vector>
 #include <iostream>
-#include <sstream>
-#include "inc/err.h"
-#include "c_args.h"
 
 std::ostream &
 operator<< (std::ostream & s, const std::vector<std::string> & v){
   for (int i=0; i<v.size(); i++) s << (i>0? ", ":"") << v[i];
   return s;
 }
+
+#include "c_args.h"
+#include "inc/err.h"
 
 Opt
 get_position_args(const std::vector<std::string>::const_iterator & b,
