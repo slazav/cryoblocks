@@ -197,11 +197,13 @@ heat capacity is allowed.
   * `spin=<v>` -- Spin (overrides value set by `material` parameter).
   * `moles=<v>` -- Number of moles.
   * `mass=<v>` -- If material is set then mass can be used instead of moles.
+  * `Bfactor` -- Factor for external magnetic field, default: 1.0
 
 * `block <name> <temperature> type=curie-weiss [parameters]` -- Curie-Weiss magnet with spin 1/2. Parameters:
   * `Tc=<v>`   -- Critical temperature.
   * `gyro=<v>` -- Gyromagnetic ratio.
   * `moles=<v>` -- Number of moles.
+  * `Bfactor` -- Factor for external magnetic field, default: 1.0
 
 * `block <name> <temperature> type=liquid_he3 [parameters]` -- liquid He3 (uses he3lib). Parameters:
   * `P=<v>` -- Pressure

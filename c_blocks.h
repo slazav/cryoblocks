@@ -87,11 +87,12 @@ class BlockParamagn: public BlockBase {
   double spin=0; // 1/2, 3/2, etc.
   double moles=0; // number of moles
   double R = 8.314472; // R-constant, [J/mol/K]
+  double Bf = 1; // factor for external magnetic field
 
   public:
 
     BlockParamagn(const str_cit & b, const str_cit & e){
-      auto opts = get_key_val_args(b,e, {"type=", "Bint=", "gyro=", "spin=", "material=", "moles=", "mass="});
+      auto opts = get_key_val_args(b,e, {"type=", "Bint=", "gyro=", "spin=", "material=", "moles=", "mass=", "Bfactor="});
 
       if (opts["material"] == "copper"){
         Bint = 0.36e-3;    // [T], dipolar feld in copper
@@ -110,6 +111,8 @@ class BlockParamagn: public BlockBase {
       }
       if (opts["Bint"]  != "") Bint  = read_value(opts["Bint"], "T");
 
+      if (opts["Bfactor"]  != "") Bf  = read_value(opts["Bfactor"], "");
+
       if (opts["gyro"]  != "") gyro  = read_value(opts["gyro"], "rad/s/T");
       if (gyro  <= 0) throw Err() << "A positive value expected: gyro";
 
@@ -121,7 +124,7 @@ class BlockParamagn: public BlockBase {
     }
 
     double get_dt(const double dQ, const double T, const double B, const double dB) const override{
-      double t(T), b(B), bi(Bint), g(gyro), s(spin);
+      double t(T), b(B*Bf), bi(Bint), g(gyro), s(spin);
       double C = moles*R*magn_par_c_(&t,&b,&bi,&g,&s);
       double D = magn_par_d_(&t,&b,&bi,&g,&s);
       return dQ/C - D*dB;
@@ -137,11 +140,12 @@ class BlockCurieWeiss: public BlockBase {
   double gyro=0; // gyromagnetic ratio [rad/s/T]
   double moles=0; // number of moles
   double R = 8.314472; // R-constant, [J/mol/K]
+  double Bf = 1;
 
   public:
 
     BlockCurieWeiss(const str_cit & b, const str_cit & e){
-      auto opts = get_key_val_args(b,e, {"type=", "Tc=", "gyro=", "material=", "moles=", "mass="});
+      auto opts = get_key_val_args(b,e, {"type=", "Tc=", "gyro=", "material=", "moles=", "mass=", "Bfactor="});
 
       if (opts["Tc"]  != "") Tc = read_value(opts["Tc"], "K");
       if (Tc <= 0) throw Err() << "A positive value expected: Tc";
@@ -151,10 +155,12 @@ class BlockCurieWeiss: public BlockBase {
 
       if (opts["moles"] != "") moles = read_value(opts["moles"], "");
       if (moles <= 0) throw Err() << "A positive value expected: moles";
+
+      if (opts["Bfactor"]  != "") Bf  = read_value(opts["Bfactor"], "");
     }
 
     double get_dt(const double dQ, const double T, const double B, const double dB) const override{
-      double t(T), b(B), tc(Tc), g(gyro);
+      double t(T), b(B*Bf), tc(Tc), g(gyro);
       double C = moles*R*magn_cw_c_(&t,&b,&tc,&g);
       double D = magn_cw_d_(&t,&b,&tc,&g);
       return dQ/C - D*dB;
