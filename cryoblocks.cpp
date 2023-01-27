@@ -141,6 +141,7 @@ class Calculator {
                  const arg_cit & b, const arg_cit & e){
     int ret = 0;
     if (blocks.count(name)>0){
+      temps0.erase(name);
       blocks.erase(name);
       ret = 1;
     }
