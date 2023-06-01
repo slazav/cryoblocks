@@ -51,6 +51,7 @@ class Calculator {
   // Parameters for adaptive steps
   double max_tempstep = 1e-2; // max relative temperature change on each calculation step
   double max_tempacc  = 1e-6; // max relative accuracy on each step
+  double max_temp     = 0;    // max temperature (or 0)
 
   bool print_substeps = false; // print all calculation steps instead of using
 
@@ -99,6 +100,7 @@ class Calculator {
   void set_magn_field(const double v) {B = v;}
   void set_magn_field_rate(const double v) {Bdot = v;}
   void set_print_substeps(const bool v) {print_substeps = v;}
+  void set_max_temp(const double v) {max_temp = v;}
   void set_max_tempstep(const double v) {max_tempstep = v;}
   void set_max_tempacc(const double v) {max_tempacc = v;}
   void set_tshift(const double v) {tshift = v;}
@@ -467,10 +469,14 @@ class Calculator {
       // avoid negative temperatures
       if (T+dT<0) dT = -T*0.99;
       temps[n] += dT;
+
+      // apply max temperature
+      if (dT>0 && max_temp>0 && temps[n]>max_temp) temps[n] = max_temp;
     }
 
     // repeat calculation of zero-C blocks to have them in the equilibrium after the step
     do_zeroc_calc(temps);
+
   }
 
   // Calculate a step t+dt, B+dB.
@@ -527,6 +533,8 @@ class Calculator {
         if (print_substeps) print_data(*t1, B+(*t1-t)*dB/dt, temps);
       }
     }
+
+
   }
 
   /***********************************/
@@ -773,8 +781,16 @@ try{
     // Set magnetic field sweep rate
     if (cmd == "field_rate") {
       if (args.size() != 1)
-        throw Err() << "Wrong number of arguments. Expect: field_rate <dB/dt>";
+        throw Err() << "Wrong number of arguments. Expect: field_rate <value, T/s>";
       calc.set_magn_field_rate(read_value(args[0], "T/s"));
+      continue;
+    }
+
+    // Set maximum temperature
+    if (cmd == "max_temp") {
+      if (args.size() != 1)
+        throw Err() << "Wrong number of arguments. Expect: max_temp <value, K>";
+      calc.set_max_temp(read_value(args[0], "K"));
       continue;
     }
 
