@@ -87,7 +87,7 @@ def cryoblocks_read(cmdfile):
       res = re.match('^\s*#FIT_SKIP\s+([0-9]+)', l)
       if res:
         ret["skip"] = int(res.group(1))
-        print('Plot to file: ', ret["plot"])
+        print('Skip fit: ', ret["skip"])
 
       # skip comments and empty lines
       l = re.sub('#.*$', '', l)
