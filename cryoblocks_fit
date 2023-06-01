@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import re
+import io
 import sys
 import numpy
 import subprocess
@@ -124,17 +125,12 @@ def cryoblocks_run(cb_info, values, to_file=0):
       stdin=subprocess.PIPE, stdout=subprocess.PIPE,
       stderr=subprocess.PIPE,
       text=True) as proc:
-    proc.stdin.write(cmd)
-    proc.stdin.close()
+    (out,err) = proc.communicate(cmd)
     if not to_file:
-      data = numpy.loadtxt(proc.stdout, comments="#", usecols=cols, unpack=True)
+      ff=io.StringIO(out)
+      data = numpy.loadtxt(ff, comments="#", usecols=cols, unpack=True)
     else:
       data = []
-    rc = proc.wait()
-    if rc:
-      print('>>> Error in cryoblocks script:')
-      print(proc.stderr.read())
-      exit(1)
 
   return data
 
