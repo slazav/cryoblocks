@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <cmath>
+#include <algorithm>
 
 #include "c_dim.h"
 
@@ -32,6 +33,52 @@ class BlockBase {
 
   // is the block has zero heat capacity?
   virtual bool is_zero_c() const {return false;}
+};
+
+std::shared_ptr<BlockBase> create_block(
+  const std::vector<std::string>::const_iterator & b,
+  const std::vector<std::string>::const_iterator & e);
+
+/********************************************************************/
+// Compound block.
+class BlockComp: public BlockBase {
+  std::vector< std::shared_ptr<BlockBase> > blocks;
+
+  public:
+
+  // Constructor.
+  // Arguments for different blocks are separated with "+"
+  BlockComp(const str_cit & b, const str_cit & e){
+    auto b1=std::find(b, e, ":")+1;
+    while (1) {
+      auto e1 = std::find(b1, e, "+");
+      auto bl = create_block(b1,e1);
+      if (!bl->is_zero_c()) blocks.push_back(bl);
+      if (e1==e) break;
+      b1 = e1 + 1;
+    }
+  }
+
+  // Heat capacity is a sum of blocks' heat capacities
+  double get_C(const double T, const double B) const override {
+    double C = 0.0;
+    for (const auto bl: blocks) C += bl->get_C(T,B);
+    return C;
+  }
+
+  // C*D is additive!
+  virtual double get_D(const double T, const double B) const override {
+    double C  = 0.0;
+    double CD = 0.0;
+    for (const auto bl: blocks){
+      C += bl->get_C(T,B);
+      CD += C*bl->get_D(T,B);
+    }
+    if (C==0.0) return 0.0;
+    return CD/C;
+  }
+
+  bool is_zero_c() const override {return blocks.size()==0;}
 };
 
 /********************************************************************/
@@ -266,6 +313,8 @@ std::shared_ptr<BlockBase> create_block(
     return std::shared_ptr<BlockBase>(new BlockZero(b,e));}
   if (type == "simple") {
     return std::shared_ptr<BlockBase>(new BlockSimple(b,e));}
+  if (type == "compound") {
+    return std::shared_ptr<BlockBase>(new BlockComp(b,e));}
 #ifdef HE3
   if (type == "paramagnet") {
     return std::shared_ptr<BlockBase>(new BlockParamagn(b,e)); }

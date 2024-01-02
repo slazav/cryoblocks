@@ -61,20 +61,19 @@ get_key_val_args(const std::vector<std::string>::const_iterator & b,
   return opts;
 }
 
-// get a single argument
+// get a single argument (first entry)
 std::string
 get_key_val(const std::vector<std::string>::const_iterator & b,
             const std::vector<std::string>::const_iterator & e,
             const std::string & key, const std::string & def){
 
-  std::string ret = def;
   for (auto arg=b; arg!=e; ++arg){
     // parse key=value
     auto n = arg->find('=', 0);
     if (n == std::string::npos) continue;
     if (key != arg->substr(0,n)) continue;
-    ret = arg->substr(n+1);
+    return arg->substr(n+1);
   }
-  return ret;
+  return def;
 }
 

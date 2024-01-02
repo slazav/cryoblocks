@@ -211,6 +211,10 @@ heat capacity is allowed.
   * `mass=<v>` -- Can be used instead of moles.
   * `volume=<v>` -- Can be used instead of moles (pressure-dependent molar volume is used).
 
+* `block <name> <temperature> type=compound : [parameters1] + [parameters2] + ...` --
+Compound block. A combination of a few different blocks built using `[parameters1]`,
+`[parameters2]`, ...
+
 
 ### Links
 
