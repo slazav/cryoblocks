@@ -118,9 +118,9 @@ dt/2 steps) less than given value. (Default: 1e-6).
 
 
 * `print <par1> ...` -- Set list of parameters for output during `run` command.
-  Use `T(<name>)` for a block temperature, `Q(name)` for heat flow
-  through a link, `t` for time, `B` for magnetic field. Example: `print t
-  H T(block1) T(block2) Q(link1)`.
+  Use `T(<name>)` for block temperature, `C(name)` for block heat
+  capacity, `Q(name)` for heat flow through a link, `t` for time, `B`
+  for magnetic field. Example: `print t H T(block1) T(block2) Q(link1)`.
 
 * `print_to_file <name>` -- Set filename for printing data. If name is `-` then
 use `stdout` (default).

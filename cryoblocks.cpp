@@ -204,6 +204,17 @@ class Calculator {
         continue;
       }
 
+      // Heat capacity of a block: C(<name>)
+      if (v.size()>3 && v[0]=='C' && v[1]=='(' && v[v.size()-1]==')'){
+        auto n = v.substr(2,v.size()-3);
+        // extra check to have more understandable error message:
+        auto b = blocks.find(n);
+        if (b == blocks.end()) throw Err() << "Unknown block name for data output: " << n;
+        auto T  = get_block_temp(temps, n);
+        *out << b->second->get_C(T,B);
+        continue;
+      }
+
       // Heat flow through a link: Q(<name>)
       if (v.size()>3 && v[0]=='Q' && v[1]=='(' && v[v.size()-1]==')'){
         auto n = v.substr(2,v.size()-3);
