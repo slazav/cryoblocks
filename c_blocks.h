@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <cmath>
+#include <algorithm>
 
 #include "c_dim.h"
 
@@ -15,13 +16,69 @@ class BlockBase {
 
   typedef std::vector<std::string>::const_iterator str_cit;
 
+  // Get heat capacity, C = T*(partial dS/dT)
+  // as a function of temperature and magnetic field
+  virtual double get_C(const double T, const double B) const = 0;
+
+  // Get demag cooling power, D = T*(partial dS/dB) / C = (partial dS/dB)/(partial dS/dT)
+  // as a function of temperature and magnetic field
+  virtual double get_D(const double T, const double B) const = 0;
+
   // Calculate temperature change.
-  // dQ = T dS = T(partial dS/dT) dT + T(partial dS/dB) dB
-  virtual double get_dt(
-    const double dQ, const double T, const double B, const double dB) const = 0;
+  // dQ = T dS = T(partial dS/dT) dT + T(partial dS/dB) dB = C dT + C*D dB
+  // dT = dQ/C - D*dB
+  double get_dt(const double dQ, const double T, const double B, const double dB) const{
+    return dQ/get_C(T,B) - get_D(T,B)*dB;
+  }
 
   // is the block has zero heat capacity?
   virtual bool is_zero_c() const {return false;}
+};
+
+std::shared_ptr<BlockBase> create_block(
+  const std::vector<std::string>::const_iterator & b,
+  const std::vector<std::string>::const_iterator & e);
+
+/********************************************************************/
+// Compound block.
+class BlockComp: public BlockBase {
+  std::vector< std::shared_ptr<BlockBase> > blocks;
+
+  public:
+
+  // Constructor.
+  // Arguments for different blocks are separated with "+"
+  BlockComp(const str_cit & b, const str_cit & e){
+    auto b1=std::find(b, e, ":")+1;
+    while (1) {
+      auto e1 = std::find(b1, e, "+");
+      auto bl = create_block(b1,e1);
+      if (!bl->is_zero_c()) blocks.push_back(bl);
+      if (e1==e) break;
+      b1 = e1 + 1;
+    }
+  }
+
+  // Heat capacity is a sum of blocks' heat capacities
+  double get_C(const double T, const double B) const override {
+    double C = 0.0;
+    for (const auto bl: blocks) C += bl->get_C(T,B);
+    return C;
+  }
+
+  // C*D is additive!
+  virtual double get_D(const double T, const double B) const override {
+    double C  = 0.0;
+    double CD = 0.0;
+    for (const auto bl: blocks){
+      C += bl->get_C(T,B);
+      CD += C*bl->get_D(T,B);
+    }
+    if (C==0.0) return 0.0;
+    return CD/C;
+  }
+
+  bool is_zero_c() const override {return blocks.size()==0;}
 };
 
 /********************************************************************/
@@ -40,8 +97,13 @@ class BlockSimple: public BlockBase {
       if (opts["power"]  != "") power = read_value(opts["power"],  "");
     }
 
-    double get_dt(const double dQ, const double T, const double B, const double dB) const override {
-       return dQ/(factor*pow(T,power)); }
+    double get_C(const double T, const double B) const override {
+      return factor*pow(T,power);
+    }
+
+    double get_D(const double T, const double B) const override {
+      return 0.0;
+    }
 
     // simple block can have zero heat capacity
     bool is_zero_c() const override {return factor==0;}
@@ -55,8 +117,14 @@ class BlockBath: public BlockBase {
     BlockBath(const str_cit & b, const str_cit & e){
       auto opts = get_key_val_args(b,e, {"type="}); }
 
-    double get_dt(const double dQ, const double T, const double B, const double dB) const override {
-       return 0; }
+    double get_C(const double T, const double B) const override {
+      return INFINITY;
+    }
+
+    double get_D(const double T, const double B) const override {
+      return 0.0;
+    }
+
 };
 
 /********************************************************************/
@@ -67,8 +135,13 @@ class BlockZero: public BlockBase {
     BlockZero(const str_cit & b, const str_cit & e){
       auto opts = get_key_val_args(b,e, {"type="}); }
 
-    double get_dt(const double dQ, const double T, const double B, const double dB) const override {
-       return INFINITY; }
+    double get_C(const double T, const double B) const override {
+      return 0.0;
+    }
+
+    double get_D(const double T, const double B) const override {
+      return 0.0;
+    }
 
     bool is_zero_c() const override {return true;}
 };
@@ -123,11 +196,14 @@ class BlockParamagn: public BlockBase {
       if (moles <= 0) throw Err() << "A positive value expected: moles";
     }
 
-    double get_dt(const double dQ, const double T, const double B, const double dB) const override{
+    double get_C(const double T, const double B) const override {
       double t(T), b(B*Bf), bi(Bint), g(gyro), s(spin);
-      double C = moles*R*magn_par_c_(&t,&b,&bi,&g,&s);
-      double D = magn_par_d_(&t,&b,&bi,&g,&s);
-      return dQ/C - D*dB;
+      return moles*R*magn_par_c_(&t,&b,&bi,&g,&s);
+    }
+
+    double get_D(const double T, const double B) const override {
+      double t(T), b(B*Bf), bi(Bint), g(gyro), s(spin);
+      return magn_par_d_(&t,&b,&bi,&g,&s);
     }
 
 };
@@ -159,11 +235,14 @@ class BlockCurieWeiss: public BlockBase {
       if (opts["Bfactor"]  != "") Bf  = read_value(opts["Bfactor"], "");
     }
 
-    double get_dt(const double dQ, const double T, const double B, const double dB) const override{
+    double get_C(const double T, const double B) const override {
       double t(T), b(B*Bf), tc(Tc), g(gyro);
-      double C = moles*R*magn_cw_c_(&t,&b,&tc,&g);
-      double D = magn_cw_d_(&t,&b,&tc,&g);
-      return dQ/C - D*dB;
+      return moles*R*magn_cw_c_(&t,&b,&tc,&g);
+    }
+
+    double get_D(const double T, const double B) const override {
+      double t(T), b(B*Bf), tc(Tc), g(gyro);
+      return magn_cw_d_(&t,&b,&tc,&g);
     }
 
 };
@@ -194,17 +273,20 @@ class BlockLHe3: public BlockBase {
     }
 
     // no support for A-phase!
-    double get_dt(const double dQ, const double T, const double B, const double dB) const override{
+    double get_C(const double T, const double B) const override {
       double p(P), t(T), ttc(T/Tc);
-      // if (T > Tc) return dQ/(he3_c_n_(&t,&p)*R*moles);
       if (T > Tc){
          double Vm = he3_vm_(&p);
-         return dQ/(he3_cv_n_(&t,&Vm)*R*moles);
+         return he3_cv_n_(&t,&Vm)*R*moles;
       }
       else {
         double ttc = T/Tc;
-        return dQ/(he3_c_b_(&ttc,&p)*R*moles);
+        return he3_c_b_(&ttc,&p)*R*moles;
       }
+    }
+
+    double get_D(const double T, const double B) const override {
+      return 0.0;
     }
 
 };
@@ -231,6 +313,8 @@ std::shared_ptr<BlockBase> create_block(
     return std::shared_ptr<BlockBase>(new BlockZero(b,e));}
   if (type == "simple") {
     return std::shared_ptr<BlockBase>(new BlockSimple(b,e));}
+  if (type == "compound") {
+    return std::shared_ptr<BlockBase>(new BlockComp(b,e));}
 #ifdef HE3
   if (type == "paramagnet") {
     return std::shared_ptr<BlockBase>(new BlockParamagn(b,e)); }

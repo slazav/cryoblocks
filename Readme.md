@@ -13,7 +13,7 @@ define T0 20mK
 block  Cu ${T0} type=paramagnet material=copper mass=100g
 block  He ${T0} type=liquid_he3 volume=36cm^3 P=0bar
 
-# They are linked by Kapitza thernal resistance which
+# They are linked by Kapitza thermal resistance which
 # is proportional to contact surface area. Let's use
 # area 1m^2 (it's not that big for sintered-powder heat exchangers)
 link   k1 Cu He type=kap_res_he3 area=1m^2
@@ -88,8 +88,8 @@ setting `print_substeps 1`). If `abs` parameter is missing or 0 then
 `<time>` is a calculation period length. otherwise it's final time at the
 end of the calculation (including shift set by `time_shift` command). If
 `to_field` parameter is used, then field rate is set to reach the
-specified field at the end of the calculation. Thern field rate is reset
-to a previous value.
+specified field at the end of the calculation. After calculation field
+rate is reset to a previous value.
 
 * `run_to  <final time> [<time step>]` -- DO NOT USE. Equivalent
 to `run <final time> abs=1`.
@@ -118,9 +118,9 @@ dt/2 steps) less than given value. (Default: 1e-6).
 
 
 * `print <par1> ...` -- Set list of parameters for output during `run` command.
-  Use `T(<name>)` for a block temperature, `Q(name)` for heat flow
-  through a link, `t` for time, `B` for magnetic field. Example: `print t
-  H T(block1) T(block2) Q(link1)`.
+  Use `T(<name>)` for block temperature, `C(name)` for block heat
+  capacity, `Q(name)` for heat flow through a link, `t` for time, `B`
+  for magnetic field. Example: `print t H T(block1) T(block2) Q(link1)`.
 
 * `print_to_file <name>` -- Set filename for printing data. If name is `-` then
 use `stdout` (default).
@@ -131,7 +131,7 @@ accuracy).
 
 
 * `read_data <file name> <par1> ...` -- Read time grid and additional parameters and
-do calculation. Parameters determin data columns: `T(<name>)` for a block
+do calculation. Parameters determine data columns: `T(<name>)` for a block
 temperature, `B` for magnetic field, `-` for skipping a column (numeric
 or non-numeric).  If `<file name>` is `-` then data is read from the current
 command file. Reading stops on `EOF` line or end of file.
@@ -162,7 +162,7 @@ A thermal link object can calculate heat transfer depending on
 temperatures of two blocks connected by the link.
 
 Calculation is done using adaptive time steps. On each step initial
-tempetures of all blocks are known. For each link heat flows are
+temperatures of all blocks are known. For each link heat flows are
 calculated, Total power applied to each block is found. Using these
 values new temperatures of each block are found. Blocks with zero heat
 capacity are calculated differently: before and after each step a
@@ -178,7 +178,7 @@ time in `run` command can be written as `1s`, `0.1m`, `1e-2ms`, etc.
 
 Following types of blocks are supported:
 
-* `block <name> <temperature> type=bath` -- A heat bath with intinite heat capacity and
+* `block <name> <temperature> type=bath` -- A heat bath with infinite heat capacity and
 constant temperature.
 
 * `block <name> <temperature> type=zero-c` -- A block with zero heat capacity.
@@ -211,6 +211,10 @@ heat capacity is allowed.
   * `mass=<v>` -- Can be used instead of moles.
   * `volume=<v>` -- Can be used instead of moles (pressure-dependent molar volume is used).
 
+* `block <name> <temperature> type=compound : [parameters1] + [parameters2] + ...` --
+Compound block. A combination of a few different blocks built using `[parameters1]`,
+`[parameters2]`, ...
+
 
 ### Links
 
@@ -232,7 +236,7 @@ Total resistance R, Wiedemann-Franz low is used to calculate heat conductivity.
 -- A field-dependent heat leak, `Qdot = <B0> + <B1>*B + <B2>*B^2 + <dB2>*(dB/dt)^2`.
 By default all parameters are 0.
 
-* `link <name> <block1> <block2> type=simple_bar [paramters]` -- A bar made of some material
+* `link <name> <block1> <block2> type=simple_bar [parameters]` -- A bar made of some material
 with Ka*T^Kb heat conductivity [W/m/K]. Length L, cross-section area S. Parameters:
   * `material=<v>` -- torlon4203, GRP, nylon, G10-CR, macor, stycast1266, stycast2850ft,
      araldite_ct200, CuNi, Manganin. 
@@ -249,8 +253,8 @@ Korringa low). Parameters:
   * `Bint=<v>` -- internal field (overrides value set by `material` parameter), default 0
   * `gyro=<v>` -- gyromagnetic ratio (overrides value set by `material` parameter)
   * `spin=<v>` -- spin (overrides value set by `material` parameter)
-  * `kappa=<v>` -- high-field value of Karringa constant (overrides value set by `material` parameter)
-  * `alpha=<v>` -- parameter alpha in field dependence of Karringa constant (overrides value set by `material` parameter), default 1
+  * `kappa=<v>` -- high-field value of Korringa constant (overrides value set by `material` parameter)
+  * `alpha=<v>` -- parameter alpha in field dependence of Korringa constant (overrides value set by `material` parameter), default 1
   * `moles=<v>` -- number of moles
   * `mass=<v>` -- if material is set then mass can be used instead of moles
 

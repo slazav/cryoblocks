@@ -1,5 +1,5 @@
 Name:         cryoblocks
-Version:      1.2
+Version:      1.3
 Release:      alt1
 
 Summary:      Cryoblocks -- thermal flow calculator for cryogenic (and any other) systems
@@ -30,6 +30,16 @@ install -m 755 -D cryoblocks_fit %buildroot%_bindir/cryoblocks_fit
 %_bindir/cryoblocks
 
 %changelog
+* Wed Mar 22 2023 Vladislav Zavjalov <slazav@altlinux.org> 1.3-alt1
+- v1.3
+  - fix error: update temperature when replacing a block
+  - fix error in paramagnet heat capacity
+  - add Curie-Weiss magnet
+  - add Bfactor parameter for magnetic blocks
+  - examples: update for new "run" command interface
+  - in run command reduce the last step if needed to reach exact final time
+  - link type=field_heat_leak: dB2 parameter, heat leak proportional to (dB/dt)^2
+
 * Thu May 05 2022 Vladislav Zavjalov <slazav@altlinux.org> 1.2-alt1
 - v1.2:
  - Change in `run` command: no second argument, options "abs",
